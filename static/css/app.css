@@ -1,0 +1,39 @@
+body {
+  background: #f8f9fa;
+}
+
+.page-heading {
+  margin-bottom: 1.5rem;
+}
+
+.page-heading h1 {
+  font-size: 1.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.page-heading p {
+  color: #6c757d;
+  margin-bottom: 0;
+}
+
+form input[type="text"],
+form input[type="password"],
+form input[type="email"] {
+  display: block;
+  width: 100%;
+  padding: 0.375rem 0.75rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #212529;
+  background-color: #fff;
+  border: 1px solid #ced4da;
+  border-radius: 0.375rem;
+}
+
+.errorlist {
+  color: #dc3545;
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  font-size: 0.875rem;
+}
