@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Dashboard | Logistica Interna{% endblock %}
 
@@ -37,7 +38,7 @@
       </select>
     </div>
     <div class="col-md-4">
-      <label class="form-label" for="business_unit">Unidade</label>
+      <label class="form-label" for="business_unit">Unidade de negócio</label>
       <select class="form-select" id="business_unit" name="business_unit">
         <option value="">Todas</option>
         {% for business_unit in filter_options.business_units %}
@@ -65,24 +66,30 @@
     </div>
   </div>
 
-  <div class="mt-3 d-flex gap-2">
+  <div class="mt-3 d-flex flex-wrap gap-2">
     <button class="btn btn-primary" type="submit">Filtrar</button>
-    <a class="btn btn-outline-secondary" href="{% url 'dashboard:home' %}">Limpar</a>
+    <a class="btn btn-outline-secondary" href="{% url 'dashboard:home' %}">Limpar filtros</a>
   </div>
 </form>
 
 {% if filter_errors %}
   <div class="alert alert-warning">
-    Alguns filtros foram ignorados por formato invalido.
+    Alguns filtros foram ignorados por formato inválido.
   </div>
 {% endif %}
 
 {% if metadata.last_successful_import %}
   <p class="text-muted">
-    Ultima importacao valida: {{ metadata.last_successful_import.file_name }}
+    Última importação válida: {{ metadata.last_successful_import.file_name }}
   </p>
 {% else %}
-  <p class="text-muted">Nenhuma importacao valida encontrada.</p>
+  <p class="text-muted">Nenhuma importação válida encontrada.</p>
+{% endif %}
+
+{% if not metadata.has_data %}
+  <div class="alert alert-info">
+    Nenhum dado encontrado para os filtros aplicados. Execute uma importação válida ou ajuste os filtros.
+  </div>
 {% endif %}
 
 <section class="row g-3">
@@ -112,13 +119,13 @@
   </div>
   <div class="col-md-3">
     <div class="border rounded p-3 h-100">
-      <span class="text-muted">Lead time operacional medio</span>
+      <span class="text-muted">Lead time operacional médio</span>
       <strong class="d-block fs-4">{{ cards.average_operational_lead_time_hours }}h</strong>
     </div>
   </div>
   <div class="col-md-3">
     <div class="border rounded p-3 h-100">
-      <span class="text-muted">Lead time transportadora medio</span>
+      <span class="text-muted">Lead time transportadora médio</span>
       <strong class="d-block fs-4">{{ cards.average_carrier_lead_time_hours }}h</strong>
     </div>
   </div>
@@ -137,16 +144,48 @@
 </section>
 
 <section class="mt-3 border rounded p-3">
-  <h2 class="h5">Contratos dos graficos</h2>
+  <h2 class="h5">Gráficos</h2>
   <div class="row g-3">
-    {% for chart_key, chart in charts.items %}
-      <div class="col-md-6">
-        <div class="border rounded p-3 h-100">
-          <h3 class="h6">{{ chart.title }}</h3>
-          <canvas id="{{ chart.id }}" height="120"></canvas>
+    <div class="col-lg-6">
+      <div class="border rounded p-3 h-100 chart-panel">
+        <h3 class="h6">{{ charts.records_by_day.title }}</h3>
+        <div class="chart-frame">
+          <canvas id="chart-records-by-day"></canvas>
         </div>
       </div>
-    {% endfor %}
+    </div>
+    <div class="col-lg-6">
+      <div class="border rounded p-3 h-100 chart-panel">
+        <h3 class="h6">{{ charts.records_by_driver.title }}</h3>
+        <div class="chart-frame">
+          <canvas id="chart-records-by-driver"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="border rounded p-3 h-100 chart-panel">
+        <h3 class="h6">{{ charts.records_by_route.title }}</h3>
+        <div class="chart-frame">
+          <canvas id="chart-records-by-route"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="border rounded p-3 h-100 chart-panel">
+        <h3 class="h6">{{ charts.delivery_status_distribution.title }}</h3>
+        <div class="chart-frame">
+          <canvas id="chart-delivery-status-distribution"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-12">
+      <div class="border rounded p-3 h-100 chart-panel">
+        <h3 class="h6">{{ charts.lead_time_by_driver.title }}</h3>
+        <div class="chart-frame chart-frame-wide">
+          <canvas id="chart-lead-time-by-driver"></canvas>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -182,9 +221,45 @@
   </div>
 </section>
 
+<section class="mt-3 border rounded p-3">
+  <h2 class="h5">Resumo por pauta</h2>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>Pauta</th>
+          <th>Registros</th>
+          <th>Entregues</th>
+          <th>Pendentes</th>
+          <th>Valor NF</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in tables.route_summary %}
+          <tr>
+            <td>{{ row.route }}</td>
+            <td>{{ row.total_records }}</td>
+            <td>{{ row.delivered_records }}</td>
+            <td>{{ row.pending_records }}</td>
+            <td>R$ {{ row.total_invoice_value }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="text-muted">Sem dados para exibir.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
 {{ filters|json_script:"dashboard-filters-data" }}
 {{ cards|json_script:"dashboard-cards-data" }}
 {{ charts|json_script:"dashboard-charts-data" }}
 {{ tables|json_script:"dashboard-tables-data" }}
 {{ metadata|json_script:"dashboard-metadata-data" }}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/dashboard_charts.js' %}"></script>
 {% endblock %}

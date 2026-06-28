@@ -2,12 +2,100 @@ import json
 from datetime import date, time
 from decimal import Decimal
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from dashboard.services.dashboard_filters import DashboardFilters
 from dashboard.services.dashboard_queries import get_dashboard_context
 from imports.models import ImportBatch, LeadTimeRecord
+
+
+User = get_user_model()
+
+
+class DashboardViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="viewer",
+            password="safe-test-password",
+        )
+
+    def test_dashboard_requires_login(self):
+        response = self.client.get(reverse("dashboard:home"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("accounts:login"), response["Location"])
+
+    def test_authenticated_user_can_access_dashboard(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("dashboard:home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "dashboard/home.html")
+
+    def test_dashboard_get_filters_do_not_break_view(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("dashboard:home"),
+            {
+                "date_start": "2026-05-01",
+                "date_end": "2026-05-31",
+                "driver_name": "BEATRIZ GOMES",
+                "route": "RT030",
+                "business_unit": "TABACO",
+                "delivery_status": "ENTREGUE",
+                "cargo_status": "Ativa",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["filters"]["date_start"], "2026-05-01")
+        self.assertEqual(response.context["filters"]["route"], "RT030")
+
+    def test_dashboard_context_contains_expected_contract_keys(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("dashboard:home"))
+
+        self.assertIn("cards", response.context)
+        self.assertIn("charts", response.context)
+        self.assertIn("filter_options", response.context)
+        self.assertIn("metadata", response.context)
+
+    def test_dashboard_renders_without_data(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("dashboard:home"))
+
+        self.assertContains(response, "Nenhum dado encontrado")
+        self.assertFalse(response.context["metadata"]["has_data"])
+
+    def test_dashboard_renders_chart_json_and_canvas_ids(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("dashboard:home"))
+
+        self.assertContains(response, 'id="dashboard-charts-data"')
+        self.assertContains(response, 'id="chart-records-by-day"')
+        self.assertContains(response, 'id="chart-records-by-driver"')
+        self.assertContains(response, 'id="chart-records-by-route"')
+        self.assertContains(response, 'id="chart-delivery-status-distribution"')
+        self.assertContains(response, 'id="chart-lead-time-by-driver"')
+        self.assertContains(response, 'class="chart-frame"', count=4)
+        self.assertContains(response, 'class="chart-frame chart-frame-wide"')
+        self.assertContains(response, "dashboard_charts.js")
+
+    def test_home_links_to_dashboard(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("core:home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse("dashboard:home"))
 
 
 class DashboardAnalyticsTests(TestCase):
