@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} | Logistica Interna{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h3 mb-0">{{ title }}</h1>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'accounts:user_list' %}">Voltar</a>
+    </div>
+
+    <form class="border rounded p-3" method="post">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+
+      {% for field in form %}
+        <div class="mb-3">
+          {% if field.name == "groups" %}
+            <label class="form-label">{{ field.label }}</label>
+            {% for checkbox in field %}
+              <div class="form-check">
+                {{ checkbox.tag }}
+                <label class="form-check-label" for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+              </div>
+            {% empty %}
+              <p class="text-muted mb-0">Execute setup_rbac para criar os grupos.</p>
+            {% endfor %}
+          {% elif field.field.widget.input_type == "checkbox" %}
+            <div class="form-check">
+              {{ field }}
+              <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            </div>
+          {% else %}
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+          {% endif %}
+          {{ field.errors }}
+        </div>
+      {% endfor %}
+
+      <button class="btn btn-primary" type="submit">{{ submit_label }}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
