@@ -1,32 +1,190 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard | Logística Interna{% endblock %}
+{% block title %}Dashboard | Logistica Interna{% endblock %}
 
 {% block content %}
 <div class="page-heading">
   <h1>Dashboard</h1>
-  <p>Estrutura inicial preparada para filtros, cards e gráficos em etapa futura.</p>
+  <p>Indicadores gerenciais calculados a partir dos dados importados no banco.</p>
 </div>
 
-<section class="border rounded p-3">
+<form class="border rounded p-3 mb-3" method="get">
   <div class="row g-3">
-    <div class="col-md-4">
-      <label class="form-label" for="periodo">Período</label>
-      <input class="form-control" id="periodo" type="text" disabled>
+    <div class="col-md-3">
+      <label class="form-label" for="date_start">Data inicial</label>
+      <input class="form-control" id="date_start" name="date_start" type="date" value="{{ filters.date_start }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label" for="date_end">Data final</label>
+      <input class="form-control" id="date_end" name="date_end" type="date" value="{{ filters.date_end }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label" for="driver_name">Motorista</label>
+      <select class="form-select" id="driver_name" name="driver_name">
+        <option value="">Todos</option>
+        {% for driver in filter_options.drivers %}
+          <option value="{{ driver }}" {% if filters.driver_name == driver %}selected{% endif %}>{{ driver }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label" for="route">Pauta</label>
+      <select class="form-select" id="route" name="route">
+        <option value="">Todas</option>
+        {% for route in filter_options.routes %}
+          <option value="{{ route }}" {% if filters.route == route %}selected{% endif %}>{{ route }}</option>
+        {% endfor %}
+      </select>
     </div>
     <div class="col-md-4">
-      <label class="form-label" for="motorista">Motorista</label>
-      <input class="form-control" id="motorista" type="text" disabled>
+      <label class="form-label" for="business_unit">Unidade</label>
+      <select class="form-select" id="business_unit" name="business_unit">
+        <option value="">Todas</option>
+        {% for business_unit in filter_options.business_units %}
+          <option value="{{ business_unit }}" {% if filters.business_unit == business_unit %}selected{% endif %}>{{ business_unit }}</option>
+        {% endfor %}
+      </select>
     </div>
     <div class="col-md-4">
-      <label class="form-label" for="pauta">Pauta</label>
-      <input class="form-control" id="pauta" type="text" disabled>
+      <label class="form-label" for="delivery_status">Status de entrega</label>
+      <select class="form-select" id="delivery_status" name="delivery_status">
+        <option value="">Todos</option>
+        {% for delivery_status in filter_options.delivery_statuses %}
+          <option value="{{ delivery_status }}" {% if filters.delivery_status == delivery_status %}selected{% endif %}>{{ delivery_status }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label" for="cargo_status">Status da carga</label>
+      <select class="form-select" id="cargo_status" name="cargo_status">
+        <option value="">Todos</option>
+        {% for cargo_status in filter_options.cargo_statuses %}
+          <option value="{{ cargo_status }}" {% if filters.cargo_status == cargo_status %}selected{% endif %}>{{ cargo_status }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="mt-3 d-flex gap-2">
+    <button class="btn btn-primary" type="submit">Filtrar</button>
+    <a class="btn btn-outline-secondary" href="{% url 'dashboard:home' %}">Limpar</a>
+  </div>
+</form>
+
+{% if filter_errors %}
+  <div class="alert alert-warning">
+    Alguns filtros foram ignorados por formato invalido.
+  </div>
+{% endif %}
+
+{% if metadata.last_successful_import %}
+  <p class="text-muted">
+    Ultima importacao valida: {{ metadata.last_successful_import.file_name }}
+  </p>
+{% else %}
+  <p class="text-muted">Nenhuma importacao valida encontrada.</p>
+{% endif %}
+
+<section class="row g-3">
+  <div class="col-md-3">
+    <div class="border rounded p-3 h-100">
+      <span class="text-muted">Registros</span>
+      <strong class="d-block fs-4">{{ cards.total_records }}</strong>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="border rounded p-3 h-100">
+      <span class="text-muted">Entregues</span>
+      <strong class="d-block fs-4">{{ cards.delivered_records }}</strong>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="border rounded p-3 h-100">
+      <span class="text-muted">Pendentes</span>
+      <strong class="d-block fs-4">{{ cards.pending_records }}</strong>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="border rounded p-3 h-100">
+      <span class="text-muted">Valor total NF</span>
+      <strong class="d-block fs-4">R$ {{ cards.total_invoice_value }}</strong>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="border rounded p-3 h-100">
+      <span class="text-muted">Lead time operacional medio</span>
+      <strong class="d-block fs-4">{{ cards.average_operational_lead_time_hours }}h</strong>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="border rounded p-3 h-100">
+      <span class="text-muted">Lead time transportadora medio</span>
+      <strong class="d-block fs-4">{{ cards.average_carrier_lead_time_hours }}h</strong>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="border rounded p-3 h-100">
+      <span class="text-muted">Atraso operacional</span>
+      <strong class="d-block fs-4">{{ cards.operational_late_percentage }}%</strong>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="border rounded p-3 h-100">
+      <span class="text-muted">Atraso transportadora</span>
+      <strong class="d-block fs-4">{{ cards.carrier_late_percentage }}%</strong>
     </div>
   </div>
 </section>
 
 <section class="mt-3 border rounded p-3">
-  <h2 class="h5">Área de indicadores</h2>
-  <p class="text-muted mb-0">Sem dados analíticos nesta fase de setup.</p>
+  <h2 class="h5">Contratos dos graficos</h2>
+  <div class="row g-3">
+    {% for chart_key, chart in charts.items %}
+      <div class="col-md-6">
+        <div class="border rounded p-3 h-100">
+          <h3 class="h6">{{ chart.title }}</h3>
+          <canvas id="{{ chart.id }}" height="120"></canvas>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
 </section>
+
+<section class="mt-3 border rounded p-3">
+  <h2 class="h5">Resumo por motorista</h2>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>Motorista</th>
+          <th>Registros</th>
+          <th>Entregues</th>
+          <th>Pendentes</th>
+          <th>Valor NF</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in tables.driver_summary %}
+          <tr>
+            <td>{{ row.driver_name }}</td>
+            <td>{{ row.total_records }}</td>
+            <td>{{ row.delivered_records }}</td>
+            <td>{{ row.pending_records }}</td>
+            <td>R$ {{ row.total_invoice_value }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="text-muted">Sem dados para exibir.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{{ filters|json_script:"dashboard-filters-data" }}
+{{ cards|json_script:"dashboard-cards-data" }}
+{{ charts|json_script:"dashboard-charts-data" }}
+{{ tables|json_script:"dashboard-tables-data" }}
+{{ metadata|json_script:"dashboard-metadata-data" }}
 {% endblock %}

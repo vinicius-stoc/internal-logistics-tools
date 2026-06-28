@@ -89,9 +89,23 @@ Arquivos Excel locais em `data/` nao devem ser versionados.
 Execute:
 
 ```powershell
+python manage.py test dashboard
 python manage.py test imports
 python manage.py check
 ```
+
+## Dashboard analytics
+
+O dashboard consome somente dados persistidos em `LeadTimeRecord` e metadados de `ImportBatch`.
+
+Contratos implementados nesta etapa:
+
+- filtros: `date_start`, `date_end`, `driver_name`, `route`, `business_unit`, `delivery_status`, `cargo_status`;
+- cards: totais, entregas, pendencias, valor de notas, medias de lead time e percentuais de atraso;
+- graficos: registros por dia, motorista, pauta, status de entrega e lead time medio por motorista;
+- tabelas: resumo por motorista e por pauta.
+
+O filtro de periodo usa `invoice_issue_date`, por ser campo obrigatorio e indexado. O label visual de pauta usa o campo tecnico `route`.
 
 ## Escopo atual
 
@@ -103,11 +117,12 @@ Esta base prepara o projeto para execucao local e evolucao futura. Ja implementa
 - persistencia dos dados tratados;
 - idempotencia por hash do arquivo;
 - command local de importacao.
+- contratos iniciais de analytics do dashboard.
 
 Ainda nao implementa:
 
 - conexao SFTP real;
-- graficos finais;
+- acabamento visual final dos graficos;
 - exportacao Excel;
 - Celery ou Redis;
 - API REST completa.
