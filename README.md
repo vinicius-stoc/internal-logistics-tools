@@ -31,6 +31,7 @@ python -m venv .venv
 pip install -r requirements.txt
 Copy-Item .env.example .env
 python manage.py migrate
+python manage.py setup_rbac
 python manage.py createsuperuser
 python manage.py runserver
 ```
@@ -84,11 +85,38 @@ python manage.py import_lead_time_records --file-path "data/Acompanhamento Lead 
 
 Arquivos Excel locais em `data/` nao devem ser versionados.
 
+## RBAC e usuarios internos
+
+O projeto usa Django Auth, Groups e Permissions.
+
+Execute apos as migrations:
+
+```powershell
+python manage.py setup_rbac
+```
+
+O command e idempotente e cria/atualiza:
+
+- `LogisticaViewer`: acesso ao dashboard e futura exportacao;
+- `LogisticaAdmin`: acesso ao dashboard, gestao de usuarios, historico de importacao, reset interno e futura exportacao.
+
+Usuarios criados pela tela interna recebem senha temporaria e ficam marcados para troca obrigatoria no primeiro acesso.
+
+Rotas principais:
+
+- `/accounts/login/`
+- `/accounts/logout/`
+- `/accounts/users/`
+- `/accounts/password/force-change/`
+
+Superusers continuam com acesso total pelo mecanismo nativo do Django, mas nao devem ser usados como usuarios operacionais diarios.
+
 ## Testes
 
 Execute:
 
 ```powershell
+python manage.py test accounts
 python manage.py test dashboard
 python manage.py test imports
 python manage.py check
@@ -118,6 +146,9 @@ Esta base prepara o projeto para execucao local e evolucao futura. Ja implementa
 - idempotencia por hash do arquivo;
 - command local de importacao.
 - contratos iniciais de analytics do dashboard.
+- RBAC simples com Django Groups e Permissions.
+- administracao interna basica de usuarios.
+- troca obrigatoria de senha no primeiro acesso.
 
 Ainda nao implementa:
 

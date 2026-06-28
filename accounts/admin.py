@@ -1,4 +1,10 @@
 from django.contrib import admin
 
+from .models import UserProfile
 
-# User administration uses Django's native auth admin in this phase.
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "must_change_password", "created_at", "updated_at")
+    search_fields = ("user__username", "user__email", "user__first_name", "user__last_name")
+    list_filter = ("must_change_password",)

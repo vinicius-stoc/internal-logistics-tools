@@ -9,6 +9,9 @@
       <h1 class="h4 mb-3">Login</h1>
       <form method="post">
         {% csrf_token %}
+        {% if next %}
+          <input type="hidden" name="next" value="{{ next }}">
+        {% endif %}
         {{ form.non_field_errors }}
         <div class="mb-3">
           <label class="form-label" for="{{ form.username.id_for_label }}">Usuário</label>

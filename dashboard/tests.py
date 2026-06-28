@@ -3,10 +3,12 @@ from datetime import date, time
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from accounts.services.rbac_service import LOGISTICA_ADMIN, LOGISTICA_VIEWER, setup_rbac
 from dashboard.services.dashboard_filters import DashboardFilters
 from dashboard.services.dashboard_queries import get_dashboard_context
 from imports.models import ImportBatch, LeadTimeRecord
@@ -17,10 +19,21 @@ User = get_user_model()
 
 class DashboardViewTests(TestCase):
     def setUp(self):
+        setup_rbac()
         self.user = User.objects.create_user(
+            username="plain",
+            password="safe-test-password",
+        )
+        self.viewer = User.objects.create_user(
             username="viewer",
             password="safe-test-password",
         )
+        self.admin = User.objects.create_user(
+            username="admin",
+            password="safe-test-password",
+        )
+        self.viewer.groups.add(Group.objects.get(name=LOGISTICA_VIEWER))
+        self.admin.groups.add(Group.objects.get(name=LOGISTICA_ADMIN))
 
     def test_dashboard_requires_login(self):
         response = self.client.get(reverse("dashboard:home"))
@@ -28,8 +41,23 @@ class DashboardViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn(reverse("accounts:login"), response["Location"])
 
-    def test_authenticated_user_can_access_dashboard(self):
+    def test_authenticated_user_without_dashboard_permission_is_blocked(self):
         self.client.force_login(self.user)
+
+        response = self.client.get(reverse("dashboard:home"))
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_logistica_viewer_can_access_dashboard(self):
+        self.client.force_login(self.viewer)
+
+        response = self.client.get(reverse("dashboard:home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "dashboard/home.html")
+
+    def test_logistica_admin_can_access_dashboard(self):
+        self.client.force_login(self.admin)
 
         response = self.client.get(reverse("dashboard:home"))
 
@@ -37,7 +65,7 @@ class DashboardViewTests(TestCase):
         self.assertTemplateUsed(response, "dashboard/home.html")
 
     def test_dashboard_get_filters_do_not_break_view(self):
-        self.client.force_login(self.user)
+        self.client.force_login(self.viewer)
 
         response = self.client.get(
             reverse("dashboard:home"),
@@ -57,7 +85,7 @@ class DashboardViewTests(TestCase):
         self.assertEqual(response.context["filters"]["route"], "RT030")
 
     def test_dashboard_context_contains_expected_contract_keys(self):
-        self.client.force_login(self.user)
+        self.client.force_login(self.viewer)
 
         response = self.client.get(reverse("dashboard:home"))
 
@@ -67,7 +95,7 @@ class DashboardViewTests(TestCase):
         self.assertIn("metadata", response.context)
 
     def test_dashboard_renders_without_data(self):
-        self.client.force_login(self.user)
+        self.client.force_login(self.viewer)
 
         response = self.client.get(reverse("dashboard:home"))
 
@@ -75,7 +103,7 @@ class DashboardViewTests(TestCase):
         self.assertFalse(response.context["metadata"]["has_data"])
 
     def test_dashboard_renders_chart_json_and_canvas_ids(self):
-        self.client.force_login(self.user)
+        self.client.force_login(self.viewer)
 
         response = self.client.get(reverse("dashboard:home"))
 
@@ -90,7 +118,7 @@ class DashboardViewTests(TestCase):
         self.assertContains(response, "dashboard_charts.js")
 
     def test_home_links_to_dashboard(self):
-        self.client.force_login(self.user)
+        self.client.force_login(self.viewer)
 
         response = self.client.get(reverse("core:home"))
 
