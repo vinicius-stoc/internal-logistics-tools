@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Home | Logística Interna{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <h1>Home</h1>
+  <p>Base inicial do sistema interno de logística.</p>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <section class="border rounded p-3 h-100">
+      <h2 class="h5">Dashboard</h2>
+      <p class="text-muted mb-3">Área preparada para consumir dados persistidos no banco.</p>
+      <a class="btn btn-primary" href="{% url 'dashboard:home' %}">Acessar dashboard</a>
+    </section>
+  </div>
+  <div class="col-md-6">
+    <section class="border rounded p-3 h-100">
+      <h2 class="h5">Importação</h2>
+      <p class="text-muted mb-0">Pipeline será implementado em etapa própria via services e management commands.</p>
+    </section>
+  </div>
+</div>
+{% endblock %}

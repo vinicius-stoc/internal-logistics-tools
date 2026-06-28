@@ -1,0 +1,905 @@
+ARQUITETURA DO PROJETO — PLATAFORMA INTERNA DE LOGÍSTICA
+
+1. OBJETIVO DO SISTEMA
+
+Este projeto consiste em uma plataforma web interna para acompanhamento gerencial de dados logísticos extraídos de uma planilha Excel disponibilizada pelo sistema interno da empresa via SFTP.
+
+O sistema deverá:
+
+* buscar ou receber uma planilha Excel de referência;
+* tratar e validar os dados;
+* armazenar os dados tratados no banco de dados;
+* renderizar um dashboard gerencial;
+* permitir filtros por período, motorista e pauta;
+* permitir exportação da visão filtrada para Excel;
+* controlar acesso por autenticação e permissões simples;
+* permitir administração básica de usuários.
+
+O projeto será desenvolvido como monolito Django, priorizando simplicidade, segurança, rastreabilidade e baixa complexidade operacional.
+
+A regra principal da arquitetura é KISS: manter a solução simples, direta e adequada ao porte real do sistema.
+
+2. CONTEXTO OPERACIONAL
+
+Público-alvo:
+
+* aproximadamente 5 funcionários da logística;
+* uso interno;
+* baixo tráfego;
+* foco em visualização gerencial e redução de processos manuais.
+
+Frequência de atualização:
+
+* a importação dos dados ocorrerá estritamente uma vez por dia;
+* não haverá atualização em tempo real;
+* o dashboard sempre consumirá dados previamente gravados no banco.
+
+Ambiente de desenvolvimento:
+
+* todo o sistema deve poder rodar em localhost;
+* a importação deve funcionar tanto com arquivo Excel local quanto com SFTP real;
+* para protótipo e apresentação à diretoria, o sistema deve funcionar 100% localmente;
+* a migração para PythonAnywhere pago ocorrerá somente após aprovação do custo.
+
+Ambiente de produção previsto:
+
+* PythonAnywhere pago;
+* Django monolítico;
+* banco de dados relacional;
+* rotina diária agendada via Scheduled Task;
+* SFTP real como fonte oficial da planilha.
+
+3. DECISÕES ARQUITETURAIS APROVADAS
+
+3.1. Padrão principal
+
+O sistema será um monolito Django.
+
+As variaveis e codigo deve seguir o padrão de nomes em ingles, nao quero variaveis em portugues-BR, manteremos em portugues-BR apenas o que estiver no front end visivel ao usuario
+
+Não serão usados microsserviços, filas complexas, mensageria distribuída, Kafka, RabbitMQ, arquitetura orientada a eventos ou frontend SPA.
+
+3.2. Frontend
+
+O frontend será baseado em:
+
+* Django Templates;
+* HTML;
+* Bootstrap;
+* JavaScript simples;
+* Chart.js;
+* SweetAlert para mensagens visuais.
+
+Não usar React, Vue, Angular ou outro framework SPA neste projeto, salvo decisão futura explícita.
+
+3.3. Backend
+
+O backend será baseado em:
+
+* Django;
+* Django Auth;
+* Django Groups e Permissions;
+* camada de services para regra de negócio;
+* management commands para rotinas de importação;
+* models simples e rastreáveis.
+
+3.4. Banco de dados
+
+Banco recomendado:
+
+* PostgreSQL para ambiente definitivo;
+* SQLite pode ser usado apenas em estágio inicial de protótipo local, se isso acelerar a validação visual;
+* se possível, manter PostgreSQL também em localhost para reduzir diferença entre desenvolvimento e produção.
+
+3.5. Hospedagem
+
+Caminho recomendado:
+
+* desenvolvimento e protótipo: localhost;
+* produção após aprovação: PythonAnywhere pago.
+
+Justificativa:
+
+* baixo tráfego;
+* poucos usuários;
+* importação diária;
+* necessidade de simplicidade operacional;
+* PythonAnywhere atende bem Django + Scheduled Task;
+* Render fica como alternativa futura caso o projeto evolua para deploy mais automatizado, workers persistentes ou banco gerenciado no mesmo provedor.
+
+4. FORA DO ESCOPO
+
+Este projeto não deve implementar inicialmente:
+
+* microsserviços;
+* Celery;
+* Redis;
+* Kafka;
+* RabbitMQ;
+* React;
+* Vue;
+* Angular;
+* API REST completa;
+* autenticação externa complexa;
+* BI externo;
+* data warehouse;
+* cache distribuído;
+* processamento em tempo real;
+* importação acionada automaticamente por usuário comum;
+* processamento de Excel dentro de views;
+* conexão SFTP dentro de views;
+* armazenamento de credenciais no código;
+* models extras sem aprovação;
+* lógica de negócio pesada em templates;
+* regras críticas espalhadas em múltiplos arquivos sem service central.
+
+5. APPS DJANGO OFICIAIS DO PROJETO
+
+A estrutura aprovada deve usar os seguintes apps principais:
+
+5.1. core
+
+Responsabilidade:
+
+* configurações compartilhadas;
+* templates base;
+* helpers comuns;
+* mixins reutilizáveis;
+* componentes globais do layout;
+* estrutura visual base.
+
+5.2. accounts
+
+Responsabilidade:
+
+* autenticação;
+* login;
+* logout;
+* troca de senha;
+* alteração obrigatória de senha no primeiro acesso;
+* reset de senha por e-mail;
+* CRUD administrativo de usuários;
+* controle de grupos e permissões;
+* UserProfile, se necessário.
+
+5.3. imports
+
+Responsabilidade:
+
+* conexão SFTP;
+* modo de importação por arquivo local;
+* leitura da planilha Excel;
+* validação estrutural da planilha;
+* normalização de colunas;
+* tratamento de tipos de dados;
+* controle de lotes de importação;
+* registro de erros de importação;
+* management commands relacionados à importação.
+
+5.4. dashboard
+
+Responsabilidade:
+
+* home;
+* menu lateral;
+* dashboard principal;
+* filtros por período, motorista e pauta;
+* services de consulta agregada;
+* contratos de dados para Chart.js;
+* exportação da visão filtrada para Excel.
+
+6. CAMADAS E RESPONSABILIDADES
+
+6.1. models
+
+Responsabilidade:
+
+* representar dados persistidos;
+* declarar relacionamentos;
+* declarar índices;
+* manter lógica simples e diretamente ligada à entidade.
+
+Não devem conter:
+
+* conexão SFTP;
+* leitura de Excel;
+* regras grandes de dashboard;
+* lógica de exportação;
+* lógica complexa de parsing.
+
+6.2. views
+
+Responsabilidade:
+
+* receber requisições;
+* validar login;
+* validar permissões;
+* capturar filtros;
+* chamar services;
+* renderizar templates;
+* retornar respostas HTTP.
+
+Não devem conter:
+
+* processamento de Excel;
+* conexão SFTP;
+* regra de negócio pesada;
+* agregações complexas diretamente na view;
+* manipulação manual de dados da planilha.
+
+6.3. services
+
+Responsabilidade:
+
+* concentrar regra de negócio;
+* processar dados;
+* validar informações;
+* montar consultas agregadas;
+* preparar dados para gráficos;
+* preparar exportação Excel;
+* isolar lógica reutilizável.
+
+Services obrigatórios conceituais:
+
+* service de importação;
+* service de leitura/normalização da planilha;
+* service de gravação no banco;
+* service de consulta do dashboard;
+* service de exportação Excel;
+* service de usuários, se necessário.
+
+6.4. management/commands
+
+Responsabilidade:
+
+* servir como ponto de entrada para rotinas executáveis;
+* orquestrar a importação diária;
+* permitir execução manual em localhost;
+* permitir agendamento no PythonAnywhere;
+* chamar services internos.
+
+O command não deve concentrar toda a regra de negócio. Ele deve apenas coordenar o fluxo.
+
+6.5. templates
+
+Responsabilidade:
+
+* exibir telas;
+* estruturar layout;
+* renderizar menus, formulários, cards e containers dos gráficos.
+
+Não devem conter:
+
+* cálculo de métricas;
+* regra de negócio;
+* parsing de dados;
+* decisões complexas de permissão.
+
+6.6. static
+
+Responsabilidade:
+
+* JavaScript visual;
+* integração futura com Chart.js;
+* SweetAlert;
+* CSS customizado, se necessário.
+
+7. MODELS APROVADOS
+
+7.1. LeadTimeRecord
+
+Model principal de negócio.
+
+Representa uma linha tratada da planilha Excel.
+
+Campos conceituais esperados:
+
+* período;
+* data de operação ou data de referência;
+* motorista;
+* pauta;
+* origem, se existir na planilha;
+* destino, se existir na planilha;
+* status, se existir na planilha;
+* lead time ou métrica equivalente;
+* campos auxiliares extraídos da planilha;
+* referência para ImportBatch;
+* data de criação;
+* data de atualização.
+
+Observação:
+
+A lista final de campos deve ser definida após análise real da planilha Excel de amostra. Nenhum campo deve ser inventado sem estar apoiado na planilha ou em necessidade validada.
+
+7.2. ImportBatch
+
+Model técnico obrigatório.
+
+Representa uma execução da rotina de importação.
+
+Campos conceituais esperados:
+
+* nome do arquivo;
+* origem da importação: local ou sftp;
+* hash/checksum do arquivo;
+* status;
+* data/hora de início;
+* data/hora de fim;
+* total de linhas lidas;
+* total de linhas válidas;
+* total de linhas inválidas;
+* mensagem de erro, se houver;
+* detalhes técnicos resumidos, se necessário.
+
+Status conceituais:
+
+* processando;
+* sucesso;
+* erro;
+* ignorado por duplicidade;
+* arquivo não encontrado;
+* erro de validação.
+
+7.3. User
+
+Usar o usuário padrão do Django, salvo necessidade explícita de customização.
+
+Não criar um sistema próprio de autenticação.
+
+7.4. UserProfile
+
+Usar apenas se necessário para campos adicionais.
+
+Responsabilidade principal:
+
+* marcar se o usuário precisa trocar senha no primeiro acesso;
+* armazenar metadados simples do usuário interno.
+
+7.5. Group e Permission
+
+Usar os recursos nativos do Django.
+
+Grupos conceituais:
+
+* LogisticaViewer;
+* LogisticaAdmin;
+* Superuser técnico.
+
+Não criar tabela customizada de roles neste momento.
+
+8. RELACIONAMENTOS CONCEITUAIS
+
+User possui UserProfile.
+
+User pertence a um ou mais Groups.
+
+Group possui Permissions.
+
+ImportBatch possui vários LeadTimeRecord.
+
+LeadTimeRecord pertence a um ImportBatch.
+
+Representação textual:
+
+User
+1 para 1
+UserProfile
+
+User
+N para N
+Group
+
+Group
+N para N
+Permission
+
+ImportBatch
+1 para N
+LeadTimeRecord
+
+9. CASOS DE USO
+
+9.1. Usuário Logística
+
+O usuário de logística pode:
+
+* fazer login;
+* alterar senha no primeiro acesso;
+* acessar Home;
+* acessar Dashboard;
+* aplicar filtro por período;
+* aplicar filtro por motorista;
+* aplicar filtro por pauta;
+* visualizar indicadores;
+* exportar visão filtrada para Excel.
+
+9.2. Administrador
+
+O administrador pode:
+
+* fazer login;
+* acessar painel administrativo;
+* criar usuários;
+* editar usuários;
+* desativar usuários;
+* resetar senha;
+* definir grupo/permissão;
+* visualizar histórico de importações;
+* verificar se a última carga diária foi executada com sucesso.
+
+9.3. Scheduler do Sistema
+
+O scheduler pode:
+
+* executar rotina diária;
+* iniciar ImportBatch;
+* buscar arquivo local ou remoto;
+* conectar no SFTP quando configurado;
+* baixar a planilha;
+* validar estrutura da planilha;
+* processar dados;
+* gravar dados tratados;
+* registrar sucesso ou erro.
+
+9.4. Sistema SFTP
+
+O sistema SFTP:
+
+* disponibiliza arquivo Excel;
+* permite conexão segura;
+* permite leitura/download do arquivo autorizado.
+
+10. PIPELINE DE DADOS
+
+10.1. Fluxo oficial
+
+O fluxo de importação deve seguir esta sequência conceitual:
+
+1. Scheduler ou desenvolvedor executa management command.
+2. Command cria um ImportBatch com status processando.
+3. Sistema identifica a origem da planilha: arquivo local ou SFTP.
+4. Se origem for local, usa o caminho configurado.
+5. Se origem for SFTP, conecta no servidor e baixa o arquivo para área temporária privada.
+6. Sistema valida existência do arquivo.
+7. Sistema calcula hash/checksum.
+8. Sistema verifica se o arquivo já foi importado.
+9. Sistema lê a planilha Excel.
+10. Sistema valida colunas obrigatórias.
+11. Sistema normaliza nomes de colunas.
+12. Sistema trata tipos de dados.
+13. Sistema valida linhas.
+14. Sistema grava dados no banco.
+15. Sistema atualiza ImportBatch com totais e status final.
+16. Sistema remove arquivos temporários, quando houver.
+17. Dashboard passa a consumir os dados atualizados do banco.
+
+10.2. Regra principal
+
+O dashboard nunca deve ler o Excel diretamente.
+
+O dashboard nunca deve conectar no SFTP.
+
+O dashboard sempre deve ler dados já tratados e persistidos no banco.
+
+10.3. Idempotência
+
+A importação deve evitar duplicidade.
+
+Estratégias permitidas:
+
+* hash/checksum do arquivo;
+* nome do arquivo;
+* data de referência;
+* chave lógica por linha;
+* combinação entre período, motorista, pauta e outros identificadores reais da planilha.
+
+A chave final deve ser definida após análise da planilha.
+
+10.4. Falhas esperadas
+
+O sistema deve lidar com:
+
+* SFTP indisponível;
+* arquivo não encontrado;
+* credencial inválida;
+* planilha com layout alterado;
+* coluna obrigatória ausente;
+* linha inválida;
+* arquivo duplicado;
+* erro de banco;
+* erro de permissão local.
+
+Falhas na importação não devem derrubar o dashboard.
+
+O dashboard deve continuar exibindo a última carga válida.
+
+11. AMBIENTES
+
+11.1. Localhost
+
+O sistema deve rodar integralmente em localhost.
+
+Recursos esperados:
+
+* servidor Django local;
+* banco local;
+* planilha Excel de amostra;
+* importação manual via management command;
+* telas funcionais;
+* autenticação funcional;
+* dashboard funcional;
+* exportação funcional, quando implementada.
+
+No ambiente local, a origem preferencial da planilha será arquivo local.
+
+11.2. Produção
+
+O sistema será migrado para PythonAnywhere pago após aprovação.
+
+Em produção:
+
+* DEBUG deve estar desativado;
+* SECRET_KEY deve ser segura;
+* credenciais devem vir de variáveis de ambiente;
+* SFTP será a origem oficial da planilha;
+* importação será executada uma vez por dia via tarefa agendada;
+* o sistema deve operar sobre banco persistente;
+* arquivos temporários devem ser limpos após processamento.
+
+12. VARIÁVEIS DE AMBIENTE CONCEITUAIS
+
+O projeto deve ser preparado para usar variáveis de ambiente.
+
+Variáveis conceituais:
+
+* ENVIRONMENT;
+* DEBUG;
+* SECRET_KEY;
+* ALLOWED_HOSTS;
+* DATABASE_URL ou configuração equivalente de banco;
+* EXCEL_SOURCE_MODE;
+* LOCAL_EXCEL_PATH;
+* SFTP_HOST;
+* SFTP_PORT;
+* SFTP_USERNAME;
+* SFTP_PASSWORD;
+* SFTP_PRIVATE_KEY, se aplicável;
+* SFTP_REMOTE_PATH;
+* SFTP_KNOWN_HOSTS_FINGERPRINT, se aplicável;
+* EMAIL_HOST;
+* EMAIL_PORT;
+* EMAIL_HOST_USER;
+* EMAIL_HOST_PASSWORD;
+* EMAIL_USE_TLS;
+* DEFAULT_FROM_EMAIL.
+
+Nenhuma credencial real deve ser versionada.
+
+13. SEGURANÇA
+
+13.1. Credenciais
+
+Credenciais nunca devem ser salvas no código.
+
+Credenciais nunca devem ser commitadas.
+
+Credenciais devem ser carregadas por variável de ambiente ou mecanismo equivalente.
+
+Credenciais SFTP não devem aparecer em logs.
+
+Credenciais de e-mail não devem aparecer em logs.
+
+13.2. SFTP
+
+Boas práticas:
+
+* preferir chave SSH a senha, se possível;
+* validar host/fingerprint, quando viável;
+* usar usuário SFTP com permissão mínima;
+* limitar acesso ao diretório necessário;
+* não permitir escrita remota se leitura for suficiente;
+* tratar timeout;
+* registrar falhas de forma controlada.
+
+13.3. Dashboard
+
+Todas as rotas do dashboard devem exigir login.
+
+Rotas administrativas devem exigir grupo/permissão adequada.
+
+Exportação Excel deve exigir permissão.
+
+Endpoints ou views de dados não devem ficar públicos.
+
+13.4. Sessão e senha
+
+Usar mecanismos nativos do Django.
+
+Fluxos obrigatórios:
+
+* login;
+* logout;
+* alteração de senha;
+* troca obrigatória no primeiro acesso;
+* reset de senha por e-mail.
+
+14. RBAC
+
+Usar Django Groups e Permissions.
+
+Grupos previstos:
+
+14.1. LogisticaViewer
+
+Permissões:
+
+* acessar Home;
+* acessar Dashboard;
+* aplicar filtros;
+* exportar visão autorizada.
+
+14.2. LogisticaAdmin
+
+Permissões:
+
+* tudo que LogisticaViewer faz;
+* gerenciar usuários;
+* visualizar histórico de importação;
+* resetar senha;
+* ativar/desativar usuários;
+* definir grupo de usuários.
+
+14.3. Superuser técnico
+
+Uso restrito para manutenção técnica.
+
+Não usar superuser como usuário operacional diário.
+
+15. DASHBOARD
+
+15.1. Filtros obrigatórios
+
+O dashboard deve ser preparado para os seguintes filtros:
+
+* período;
+* motorista;
+* pauta.
+
+15.2. Estratégia dos dados
+
+O frontend não deve receber milhares de registros crus sem necessidade.
+
+Os dados devem ser agregados no backend.
+
+O service do dashboard deve retornar dados já preparados para cards, gráficos e tabelas.
+
+15.3. Chart.js
+
+Chart.js deve receber dados em estrutura simples, estável e previsível.
+
+A definição final dos gráficos será feita em etapa posterior.
+
+Neste momento, a arquitetura deve deixar o terreno pronto para:
+
+* cards;
+* gráficos por período;
+* gráficos por motorista;
+* gráficos por pauta;
+* comparativos;
+* exportação da visão filtrada.
+
+16. EXPORTAÇÃO EXCEL
+
+A exportação deve seguir os mesmos filtros aplicados no dashboard.
+
+A exportação deve ser implementada em service próprio.
+
+A view deve apenas:
+
+* validar login;
+* validar permissão;
+* capturar filtros;
+* chamar service de exportação;
+* retornar o arquivo.
+
+A exportação não deve reprocessar a planilha original.
+
+A exportação deve usar dados persistidos no banco.
+
+17. PERFORMANCE
+
+17.1. Índices
+
+O model principal deve prever índices compatíveis com os filtros.
+
+Campos candidatos a índice:
+
+* data de referência ou período;
+* motorista;
+* pauta;
+* import_batch;
+* combinação entre período, motorista e pauta.
+
+A definição final depende dos campos reais.
+
+17.2. Consultas
+
+Evitar carregar dados desnecessários.
+
+Preferir agregações no banco.
+
+Evitar cálculos grandes no template.
+
+Evitar consultas repetidas dentro de loops.
+
+18. TESTES
+
+Testes mínimos esperados:
+
+* importação com planilha válida;
+* importação com arquivo duplicado;
+* importação com coluna obrigatória ausente;
+* importação com linha inválida;
+* criação de ImportBatch;
+* filtros do dashboard;
+* permissões de acesso;
+* bloqueio de usuário sem permissão;
+* troca obrigatória de senha;
+* exportação com filtros.
+
+19. ESTRATÉGIA DE DESENVOLVIMENTO COM IA
+
+O desenvolvimento será feito com apoio do Codex.
+
+Este arquivo é a fonte da verdade do projeto.
+
+O Codex deve seguir este arquivo antes de sugerir qualquer alteração estrutural.
+
+20. REGRAS OBRIGATÓRIAS PARA O CODEX
+
+Antes de criar ou alterar qualquer arquivo, o Codex deve:
+
+1. Explicar o que será feito na etapa atual.
+2. Detalhar quais arquivos serão criados ou alterados.
+3. Detalhar quais responsabilidades cada arquivo terá.
+4. Informar se haverá alteração em models.
+5. Informar se haverá migrations.
+6. Informar se haverá alteração em settings.
+7. Informar se haverá nova dependência.
+8. Informar se haverá alteração em variáveis de ambiente.
+9. Justificar a abordagem com base neste arquivo.
+10. Pausar e aguardar aprovação explícita.
+
+O Codex só pode escrever ou alterar código após aprovação explícita do usuário.
+
+21. REGRAS DE PROTEÇÃO CONTRA DRIFT ARQUITETURAL
+
+O Codex não pode:
+
+* criar app novo sem aprovação;
+* criar model novo sem aprovação;
+* alterar responsabilidade das camadas sem aprovação;
+* mover regra de negócio para views;
+* processar Excel em views;
+* conectar SFTP em views;
+* introduzir Celery sem aprovação;
+* introduzir Redis sem aprovação;
+* introduzir API REST completa sem aprovação;
+* introduzir React/Vue sem aprovação;
+* versionar credenciais;
+* alterar o escopo aprovado sem justificar.
+
+22. CHECKLIST ANTES DE CADA ETAPA
+
+Antes de executar uma etapa, validar:
+
+* esta etapa respeita a arquitetura?
+* esta etapa mantém o monolito simples?
+* esta etapa evita overengineering?
+* esta etapa mantém SFTP fora das views?
+* esta etapa mantém Excel fora do dashboard?
+* esta etapa preserva a separação por apps?
+* esta etapa impacta models?
+* esta etapa exige migration?
+* esta etapa exige dependência?
+* esta etapa exige variável de ambiente?
+* esta etapa pode ser testada em localhost?
+* esta etapa prepara migração futura para PythonAnywhere?
+
+23. CHECKLIST APÓS CADA ETAPA
+
+Após executar uma etapa, informar:
+
+* arquivos criados;
+* arquivos alterados;
+* comandos executados;
+* como testar manualmente;
+* possíveis riscos;
+* pendências;
+* próxima etapa recomendada.
+
+24. ORDEM RECOMENDADA DE DESENVOLVIMENTO
+
+Chat 1 — Setup e base do projeto
+
+Objetivo:
+
+* inicializar projeto Django;
+* configurar estrutura base;
+* criar apps oficiais;
+* organizar settings;
+* preparar autenticação base;
+* preparar templates base;
+* preparar estrutura de services;
+* preparar ambiente local;
+* criar documentação inicial.
+
+Chat 2 — Modelagem e importação
+
+Objetivo:
+
+* analisar planilha Excel;
+* definir campos reais;
+* criar LeadTimeRecord;
+* criar ImportBatch;
+* criar pipeline de importação local;
+* preparar futura origem SFTP;
+* validar idempotência.
+
+Chat 3 — Data Analytics e contratos do dashboard
+
+Objetivo:
+
+* definir métricas;
+* definir filtros;
+* definir agregações;
+* definir formato de dados para Chart.js;
+* criar services de consulta.
+
+Chat 4 — Views, templates e navegação
+
+Objetivo:
+
+* criar Home;
+* criar menu lateral;
+* criar tela de dashboard;
+* integrar filtros;
+* preparar containers para gráficos.
+
+Chat 5 — RBAC, usuários e primeiro acesso
+
+Objetivo:
+
+* configurar grupos;
+* permissões;
+* CRUD administrativo de usuários;
+* troca obrigatória de senha;
+* reset por e-mail.
+
+Chat 6 — Exportação Excel e acabamento
+
+Objetivo:
+
+* exportar visão filtrada;
+* mensagens visuais;
+* loading;
+* tratamento de erros;
+* preparação para apresentação.
+
+25. PRINCÍPIO FINAL
+
+A aplicação deve ser simples, auditável e confiável.
+
+O SFTP e o Excel são fontes de dados.
+
+O banco é a fonte consumida pelo dashboard.
+
+A view apresenta dados.
+
+Os services decidem regras.
+
+O management command executa rotinas.
+
+O usuário final nunca deve sentir falha técnica da importação como falha da aplicação inteira.
+
+FIM DO ARQUIVO.

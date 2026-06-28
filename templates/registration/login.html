@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Login | Logística Interna{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-sm-10 col-md-6 col-lg-4">
+    <div class="border rounded p-4">
+      <h1 class="h4 mb-3">Login</h1>
+      <form method="post">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div class="mb-3">
+          <label class="form-label" for="{{ form.username.id_for_label }}">Usuário</label>
+          {{ form.username }}
+          {{ form.username.errors }}
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="{{ form.password.id_for_label }}">Senha</label>
+          {{ form.password }}
+          {{ form.password.errors }}
+        </div>
+        <button class="btn btn-primary w-100" type="submit">Entrar</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
