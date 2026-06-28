@@ -4,22 +4,22 @@
 
 {% block content %}
 <div class="page-heading">
-  <h1>Home</h1>
-  <p>Base inicial do sistema interno de logística.</p>
+  <h1>Logística Interna</h1>
+  <p>Acompanhamento gerencial de dados logísticos importados e tratados no banco.</p>
 </div>
 
 <div class="row g-3">
   <div class="col-md-6">
     <section class="border rounded p-3 h-100">
       <h2 class="h5">Dashboard</h2>
-      <p class="text-muted mb-3">Área preparada para consumir dados persistidos no banco.</p>
+      <p class="text-muted mb-3">Visualize indicadores, filtros e gráficos com base nos registros importados.</p>
       <a class="btn btn-primary" href="{% url 'dashboard:home' %}">Acessar dashboard</a>
     </section>
   </div>
   <div class="col-md-6">
     <section class="border rounded p-3 h-100">
       <h2 class="h5">Importação</h2>
-      <p class="text-muted mb-0">Pipeline será implementado em etapa própria via services e management commands.</p>
+      <p class="text-muted mb-0">Os dados exibidos no dashboard dependem da rotina local de importação executada via management command.</p>
     </section>
   </div>
 </div>
