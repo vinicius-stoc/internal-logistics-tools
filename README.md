@@ -1,27 +1,27 @@
-# Plataforma Interna de Logística
+# Plataforma Interna de Logistica
 
-Monolito Django para acompanhamento gerencial de dados logísticos importados de planilha Excel e, futuramente, de origem SFTP.
+Monolito Django para acompanhamento gerencial de dados logisticos importados de planilha Excel e, futuramente, de origem SFTP.
 
 ## Arquitetura
 
-O arquivo `arquitetura_projeto.txt` é a fonte da verdade arquitetural do projeto.
+O arquivo `arquitetura_projeto.txt` e a fonte da verdade arquitetural do projeto.
 
 Diretrizes principais:
 
 - monolito Django;
 - Django Templates, Bootstrap, JavaScript simples, Chart.js e SweetAlert;
-- autenticação com Django Auth, Groups e Permissions;
-- regra de negócio em services;
-- rotinas de importação via management commands;
+- autenticacao com Django Auth, Groups e Permissions;
+- regra de negocio em services;
+- rotinas de importacao via management commands;
 - dashboard consumindo dados persistidos no banco;
 - sem Excel ou SFTP dentro de views.
 
 ## Apps oficiais
 
 - `core`: estrutura visual base, templates globais e helpers compartilhados.
-- `accounts`: autenticação e futuros fluxos administrativos de usuários.
-- `imports`: futura importação local/SFTP, validação e persistência.
-- `dashboard`: futura consulta agregada, filtros e contratos para gráficos.
+- `accounts`: autenticacao e futuros fluxos administrativos de usuarios.
+- `imports`: importacao local/SFTP futura, validacao e persistencia.
+- `dashboard`: futura consulta agregada, filtros e contratos para graficos.
 
 ## Setup local
 
@@ -43,23 +43,71 @@ http://127.0.0.1:8000/
 
 ## Banco de dados
 
-Sem `DATABASE_URL`, o projeto usa SQLite local para protótipo.
+Sem `DATABASE_URL`, o projeto usa SQLite local para prototipo.
 
 Para PostgreSQL, configure `DATABASE_URL` no `.env`.
 
-## Variáveis de ambiente
+## Variaveis de ambiente
 
-Use `.env.example` como referência. Credenciais reais não devem ser versionadas.
+Use `.env.example` como referencia. Credenciais reais nao devem ser versionadas.
+
+Variaveis principais para importacao local:
+
+- `EXCEL_SOURCE_MODE=local`
+- `LOCAL_EXCEL_PATH=data/Acompanhamento Lead Time - Tabaco mes de Maio 2026.xlsx`
+
+## Importacao local de lead time
+
+Nesta etapa, a origem funcional e somente arquivo Excel local. A conexao SFTP continua preparada apenas de forma conceitual.
+
+Regras atuais:
+
+- aba importada: `COM 001`;
+- intervalo importado: colunas `A:AH`;
+- segunda coluna `Placa` descartada;
+- colunas `AI` em diante descartadas;
+- `business_unit` derivado do nome do arquivo, por exemplo `TABACO`;
+- dashboard deve consumir apenas dados persistidos no banco.
+
+Execute:
+
+```powershell
+python manage.py migrate
+python manage.py import_lead_time_records
+```
+
+Para testar outro arquivo local:
+
+```powershell
+python manage.py import_lead_time_records --file-path "data/Acompanhamento Lead Time - Tabaco mes de Maio 2026.xlsx"
+```
+
+Arquivos Excel locais em `data/` nao devem ser versionados.
+
+## Testes
+
+Execute:
+
+```powershell
+python manage.py test imports
+python manage.py check
+```
 
 ## Escopo atual
 
-Esta base prepara o projeto para execução local e evolução futura. Ainda não implementa:
+Esta base prepara o projeto para execucao local e evolucao futura. Ja implementa:
 
-- leitura real da planilha Excel;
-- conexão SFTP;
-- pipeline de importação;
-- models de negócio;
-- gráficos finais;
-- exportação Excel;
+- modelagem inicial de `ImportBatch` e `LeadTimeRecord`;
+- leitura local da planilha Excel;
+- validacao estrutural da aba `COM 001`;
+- persistencia dos dados tratados;
+- idempotencia por hash do arquivo;
+- command local de importacao.
+
+Ainda nao implementa:
+
+- conexao SFTP real;
+- graficos finais;
+- exportacao Excel;
 - Celery ou Redis;
 - API REST completa.

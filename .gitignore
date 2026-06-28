@@ -217,4 +217,6 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-.xlsx
+# Local source spreadsheets must not be versioned.
+data/*.xlsx
+data/*.xls

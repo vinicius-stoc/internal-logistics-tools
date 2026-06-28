@@ -1,1 +1,1 @@
-"""Import services will isolate SFTP, Excel parsing, validation, and persistence."""
+"""Import services isolate Excel parsing, validation, calculation, and persistence."""
