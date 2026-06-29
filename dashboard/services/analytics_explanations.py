@@ -113,6 +113,34 @@ def get_analytics_explanations():
                 "Mede a qualidade da atualizacao de status no recorte analisado.",
                 "Divergencia % = (Divergencias / Registros totais) x 100",
             ),
+            "peak_billing_day": _item(
+                "Maior dia de faturamento",
+                "Dia com maior quantidade de notas emitidas no recorte filtrado.",
+                "Agrupa os registros pela data de emissao da NF e seleciona o maior volume.",
+                "Mostra quando a demanda foi concentrada pelo faturamento.",
+                "Maior dia = max(count(registros) por data de emissao)",
+            ),
+            "last_3_business_days_records": _item(
+                "Faturados nos ultimos 3 dias uteis",
+                "Quantidade de registros emitidos nos ultimos 3 dias uteis de cada mes filtrado.",
+                "Identifica os ultimos 3 dias uteis do mes de cada emissao e soma os registros desse periodo.",
+                "Mostra a pressao de fechamento criada no fim do mes.",
+                "Faturados fim do mes = count(registros emitidos nos ultimos 3 dias uteis)",
+            ),
+            "last_3_business_days_percentage": _item(
+                "Concentracao no fim do mes",
+                "Percentual do volume filtrado emitido nos ultimos 3 dias uteis.",
+                "Divide os registros dos ultimos 3 dias uteis pelo total de registros filtrados.",
+                "Ajuda a provar se o fechamento concentra demanda acima do normal.",
+                "Concentracao = (Registros dos ultimos 3 dias uteis / Registros totais) x 100",
+            ),
+            "normal_daily_average_records": _item(
+                "Media diaria normal",
+                "Media de registros emitidos fora dos ultimos 3 dias uteis.",
+                "Soma os registros do periodo normal e divide pela quantidade de dias com emissao.",
+                "Serve como referencia para comparar a pressao do fim do mes.",
+                "Media normal = Registros fora do fechamento / Dias com emissao fora do fechamento",
+            ),
         },
         "charts": {
             "records_by_day": _item(
@@ -171,6 +199,20 @@ def get_analytics_explanations():
                 "Mostra frequencias de atendimento com maior criticidade.",
                 "Metricas por frequencia = agregacoes dos registros com mesma frequency",
             ),
+            "billing_vs_delivery_by_day": _item(
+                "Faturados x entregues por dia",
+                "Compara a demanda criada pelo faturamento com a entrega realizada pela logistica.",
+                "Conta registros pela data de emissao da NF e entregas pela data de entrega ao cliente.",
+                "Mostra se o volume faturado foi concentrado em dias especificos e se a entrega acompanhou o ritmo.",
+                "Faturados = count(emissao por dia); Entregues = count(entrega por dia)",
+            ),
+            "delay_by_issue_day": _item(
+                "Atrasos por data de faturamento",
+                "Mostra se os pedidos emitidos em dias de pico geraram mais atraso.",
+                "Agrupa registros pela data de emissao, conta faturados e calcula atraso operacional e transportadora.",
+                "Ajuda a defender se o gargalo comeca na concentracao de faturamento.",
+                "Atraso por emissao = (Atrasos dos registros emitidos no dia / Registros emitidos no dia) x 100",
+            ),
         },
         "tables": {
             "driver_outliers": _table_item("Motoristas fora da curva", "driver_name"),
@@ -191,6 +233,13 @@ def get_analytics_explanations():
                 "Lista os registros divergentes ordenando por entrega, emissao e NF.",
                 "Ajuda a limpar base, cobrar atualizacao e evitar leitura falsa do processo.",
                 "Filtro = delivery_status contem 'entreg' e cargo_status nao contem 'entreg'",
+            ),
+            "commercial_pressure_summary": _item(
+                "Resumo de pressao comercial",
+                "Compara periodo normal com os ultimos 3 dias uteis do mes.",
+                "Separa registros pela data de emissao da NF e compara volume, valor, atrasos, lead time e severidade.",
+                "Ajuda a demonstrar se o fechamento comercial cria sobrecarga logistica.",
+                "Comparacao = metricas do periodo normal versus ultimos 3 dias uteis",
             ),
         },
         "scores": {

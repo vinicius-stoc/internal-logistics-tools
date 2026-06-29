@@ -1,4 +1,5 @@
 from collections import defaultdict
+from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from math import ceil
 from typing import Optional
@@ -59,7 +60,9 @@ def get_dashboard_context(filters: Optional[DashboardFilters] = None):
         totals=criticality_totals,
         include_empty_groups=False,
     )
+    commercial_pressure = _get_commercial_pressure(filtered_queryset)
     cards = _get_cards(filtered_queryset, route_rows)
+    cards.update(commercial_pressure["cards"])
 
     return {
         "filters": filters.as_dict(),
@@ -85,6 +88,10 @@ def get_dashboard_context(filters: Optional[DashboardFilters] = None):
                 title="Lead time por frequencia",
                 metadata_key="frequency",
             ),
+            "billing_vs_delivery_by_day": commercial_pressure["charts"][
+                "billing_vs_delivery_by_day"
+            ],
+            "delay_by_issue_day": commercial_pressure["charts"]["delay_by_issue_day"],
         },
         "tables": {
             "driver_outliers": _get_driver_outliers_table(filtered_queryset, driver_rows),
@@ -94,6 +101,9 @@ def get_dashboard_context(filters: Optional[DashboardFilters] = None):
             "critical_frequencies": _get_critical_dimension_table(frequency_rows, "frequency"),
             "invoice_outliers": _get_invoice_outliers_table(filtered_queryset),
             "status_inconsistencies": _get_status_inconsistencies_table(filtered_queryset),
+            "commercial_pressure_summary": commercial_pressure["tables"][
+                "commercial_pressure_summary"
+            ],
         },
         "explanations": get_analytics_explanations(),
         "metadata": {
@@ -213,6 +223,287 @@ def _get_records_by_day_chart(queryset):
         label="Registros",
         data=[row["total"] for row in rows],
     )
+
+
+def _get_commercial_pressure(queryset):
+    rows = list(
+        queryset.values_list(
+            "invoice_issue_date",
+            "customer_delivery_date",
+            "invoice_value",
+            "is_operational_late",
+            "is_carrier_late",
+            "operational_lead_time_hours",
+            "carrier_lead_time_hours",
+        )
+    )
+    issue_rows_by_day = defaultdict(list)
+    delivery_count_by_day = defaultdict(int)
+
+    for row in rows:
+        issue_date, delivery_date = row[0], row[1]
+        issue_rows_by_day[issue_date].append(row)
+        if delivery_date:
+            delivery_count_by_day[delivery_date] += 1
+
+    issue_dates = sorted(day for day in issue_rows_by_day if day is not None)
+    peak_day = _get_peak_billing_day(issue_rows_by_day)
+    last_3_business_days = _get_last_3_business_days_for_dates(issue_dates)
+    last_3_rows = [
+        row
+        for issue_date, grouped_rows in issue_rows_by_day.items()
+        if issue_date in last_3_business_days
+        for row in grouped_rows
+    ]
+    normal_rows = [
+        row
+        for issue_date, grouped_rows in issue_rows_by_day.items()
+        if issue_date not in last_3_business_days
+        for row in grouped_rows
+    ]
+    total_records = len(rows)
+    last_3_records = len(last_3_rows)
+
+    return {
+        "cards": {
+            "peak_billing_day": {
+                "date": _format_date(peak_day["date"]),
+                "records": peak_day["records"],
+                "total_invoice_value": _format_decimal(peak_day["total_invoice_value"]),
+            },
+            "last_3_business_days_records": last_3_records,
+            "last_3_business_days_percentage": _format_percentage(
+                last_3_records,
+                total_records,
+            ),
+            "last_3_business_days_range": _format_business_days_range(last_3_business_days),
+            "normal_daily_average_records": _format_decimal(
+                _get_average_records_per_day(issue_rows_by_day, last_3_business_days, normal_only=True)
+            ),
+        },
+        "charts": {
+            "billing_vs_delivery_by_day": _get_billing_vs_delivery_chart(
+                issue_rows_by_day,
+                delivery_count_by_day,
+            ),
+            "delay_by_issue_day": _get_delay_by_issue_day_chart(issue_rows_by_day),
+        },
+        "tables": {
+            "commercial_pressure_summary": [
+                _build_commercial_pressure_row(
+                    "Periodo normal",
+                    normal_rows,
+                    total_records,
+                    issue_day_count=_count_issue_days(issue_rows_by_day, last_3_business_days, normal_only=True),
+                ),
+                _build_commercial_pressure_row(
+                    "Ultimos 3 dias uteis",
+                    last_3_rows,
+                    total_records,
+                    issue_day_count=len(last_3_business_days),
+                ),
+            ]
+        },
+    }
+
+
+def _get_peak_billing_day(issue_rows_by_day):
+    if not issue_rows_by_day:
+        return {
+            "date": None,
+            "records": 0,
+            "total_invoice_value": Decimal("0"),
+        }
+
+    peak_date, peak_rows = sorted(
+        issue_rows_by_day.items(),
+        key=lambda item: (-len(item[1]), item[0] or date.min),
+    )[0]
+    return {
+        "date": peak_date,
+        "records": len(peak_rows),
+        "total_invoice_value": sum((row[2] or Decimal("0") for row in peak_rows), Decimal("0")),
+    }
+
+
+def _get_last_3_business_days_for_dates(issue_dates):
+    days = set()
+    months = sorted({(day.year, day.month) for day in issue_dates})
+    for year, month in months:
+        business_days = []
+        cursor = date(year, month, 1)
+        while cursor.month == month:
+            if cursor.weekday() < 5:
+                business_days.append(cursor)
+            cursor += timedelta(days=1)
+        days.update(business_days[-3:])
+    return days
+
+
+def _format_business_days_range(days):
+    if not days:
+        return ""
+    sorted_days = sorted(days)
+    if len(sorted_days) == 1:
+        return _format_date(sorted_days[0])
+    return f"{_format_date(sorted_days[0])} a {_format_date(sorted_days[-1])}"
+
+
+def _get_average_records_per_day(issue_rows_by_day, last_3_business_days, normal_only=False):
+    day_counts = [
+        len(rows)
+        for issue_date, rows in issue_rows_by_day.items()
+        if not normal_only or issue_date not in last_3_business_days
+    ]
+    return _safe_divide(sum(day_counts), len(day_counts))
+
+
+def _count_issue_days(issue_rows_by_day, last_3_business_days, normal_only=False):
+    return len(
+        [
+            issue_date
+            for issue_date in issue_rows_by_day
+            if not normal_only or issue_date not in last_3_business_days
+        ]
+    )
+
+
+def _get_billing_vs_delivery_chart(issue_rows_by_day, delivery_count_by_day):
+    labels = sorted(set(issue_rows_by_day) | set(delivery_count_by_day))
+    return make_chart_contract(
+        chart_id="billing_vs_delivery_by_day",
+        title="Faturados x entregues por dia",
+        chart_type="bar",
+        labels=[_format_date(day) for day in labels],
+        datasets=[
+            {
+                "label": "Faturados",
+                "data": [len(issue_rows_by_day.get(day, [])) for day in labels],
+            },
+            {
+                "label": "Entregues",
+                "data": [delivery_count_by_day.get(day, 0) for day in labels],
+            },
+        ],
+    )
+
+
+def _get_delay_by_issue_day_chart(issue_rows_by_day):
+    labels = sorted(day for day in issue_rows_by_day if day is not None)
+    metadata = []
+    billed_records = []
+    operational_late_percentages = []
+    carrier_late_percentages = []
+
+    for issue_date in labels:
+        rows = issue_rows_by_day[issue_date]
+        total_records = len(rows)
+        operational_late_records = sum(1 for row in rows if row[3])
+        carrier_late_records = sum(1 for row in rows if row[4])
+        billed_records.append(total_records)
+        operational_late_percentages.append(
+            _to_float(_safe_divide(operational_late_records * 100, total_records))
+        )
+        carrier_late_percentages.append(
+            _to_float(_safe_divide(carrier_late_records * 100, total_records))
+        )
+        metadata.append(
+            {
+                "issue_date": _format_date(issue_date),
+                "total_records": total_records,
+                "operational_late_records": operational_late_records,
+                "carrier_late_records": carrier_late_records,
+                "operational_late_percentage": _format_percentage(
+                    operational_late_records,
+                    total_records,
+                ),
+                "carrier_late_percentage": _format_percentage(
+                    carrier_late_records,
+                    total_records,
+                ),
+            }
+        )
+
+    return make_chart_contract(
+        chart_id="delay_by_issue_day",
+        title="Atrasos por data de faturamento",
+        chart_type="bar",
+        labels=[_format_date(day) for day in labels],
+        datasets=[
+            {
+                "label": "Faturados",
+                "data": billed_records,
+                "type": "bar",
+                "yAxisID": "y",
+            },
+            {
+                "label": "Atraso operacional %",
+                "data": operational_late_percentages,
+                "type": "line",
+                "yAxisID": "y1",
+            },
+            {
+                "label": "Atraso transportadora %",
+                "data": carrier_late_percentages,
+                "type": "line",
+                "yAxisID": "y1",
+            },
+        ],
+        options={
+            "scales": {
+                "y": {
+                    "beginAtZero": True,
+                    "position": "left",
+                    "title": {
+                        "display": True,
+                        "text": "Registros faturados",
+                    },
+                },
+                "y1": {
+                    "beginAtZero": True,
+                    "max": 100,
+                    "position": "right",
+                    "grid": {
+                        "drawOnChartArea": False,
+                    },
+                    "title": {
+                        "display": True,
+                        "text": "Atraso %",
+                    },
+                },
+            }
+        },
+        metadata=metadata,
+    )
+
+
+def _build_commercial_pressure_row(label, rows, total_records, issue_day_count):
+    records = len(rows)
+    operational_late_records = sum(1 for row in rows if row[3])
+    carrier_late_records = sum(1 for row in rows if row[4])
+    invoice_value = sum((row[2] or Decimal("0") for row in rows), Decimal("0"))
+    operational_values = [row[5] for row in rows if row[5] is not None]
+    carrier_values = [row[6] for row in rows if row[6] is not None]
+    delay_severity_hours = sum(
+        (_get_delay_severity(row[5], row[6]) for row in rows),
+        Decimal("0"),
+    )
+
+    return {
+        "period": label,
+        "issue_days": issue_day_count,
+        "records": records,
+        "records_share": _format_percentage(records, total_records),
+        "daily_average_records": _format_decimal(_safe_divide(records, issue_day_count)),
+        "total_invoice_value": _format_decimal(invoice_value),
+        "operational_late_percentage": _format_percentage(operational_late_records, records),
+        "carrier_late_percentage": _format_percentage(carrier_late_records, records),
+        "average_operational_lead_time_hours": _format_decimal(_average_decimal(operational_values)),
+        "operational_lead_time_p90_hours": _format_decimal(_get_percentile(operational_values, 90)),
+        "average_carrier_lead_time_hours": _format_decimal(_average_decimal(carrier_values)),
+        "carrier_lead_time_p90_hours": _format_decimal(_get_percentile(carrier_values, 90)),
+        "delay_severity_hours": _format_decimal(delay_severity_hours),
+    }
 
 
 def _get_driver_efficiency_scatter_chart(driver_rows):
@@ -999,6 +1290,13 @@ def _safe_divide(numerator, denominator):
     if denominator == 0:
         return Decimal("0")
     return Decimal(numerator or 0) / denominator
+
+
+def _average_decimal(values):
+    values = [Decimal(value) for value in values if value is not None]
+    if not values:
+        return Decimal("0")
+    return sum(values, Decimal("0")) / Decimal(len(values))
 
 
 def _format_decimal(value):

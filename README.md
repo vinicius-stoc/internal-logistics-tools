@@ -160,6 +160,10 @@ Formulas:
 - `pending_records`: `total_records - delivered_records`.
 - `status_inconsistency_count`: entregas concluidas com status de carga incoerente.
 - `status_inconsistency_percentage`: percentual de divergencias de status sobre o total filtrado.
+- `peak_billing_day`: dia com maior volume de faturamento/emissao.
+- `last_3_business_days_records`: registros emitidos nos ultimos 3 dias uteis do mes.
+- `last_3_business_days_percentage`: concentracao percentual do volume nos ultimos 3 dias uteis.
+- `normal_daily_average_records`: media diaria de emissao fora dos ultimos 3 dias uteis.
 
 ### Graficos
 
@@ -171,6 +175,8 @@ Formulas:
 - `lead_time_distribution`: distribuicao de lead time por faixas de horas.
 - `region_lead_time_comparison`: lead time e atraso por regiao, quando a coluna opcional existe.
 - `frequency_lead_time_comparison`: lead time e atraso por frequencia, quando a coluna opcional existe.
+- `billing_vs_delivery_by_day`: compara registros faturados por data de emissao com entregas por data de entrega.
+- `delay_by_issue_day`: cruza volume faturado por data de emissao com atraso operacional e transportadora.
 
 ### Tabelas
 
@@ -181,6 +187,19 @@ Formulas:
 - `critical_frequencies`: frequencias criticas, quando `frequency` estiver preenchido.
 - `invoice_outliers`: notas fiscais com maiores lead times.
 - `status_inconsistencies`: registros entregues com status de carga nao entregue ou vazio.
+- `commercial_pressure_summary`: compara periodo normal contra ultimos 3 dias uteis do mes para evidenciar pressao de fechamento comercial.
+
+### Pressao comercial
+
+A secao de pressao comercial separa a demanda criada pelo faturamento da resposta operacional da logistica.
+
+Contratos principais:
+
+- `billing_vs_delivery_by_day`: `Faturados` usa data de emissao da NF; `Entregues` usa data de entrega ao cliente.
+- `delay_by_issue_day`: agrupa por data de emissao da NF e calcula atraso operacional e transportadora dos registros emitidos em cada dia.
+- `commercial_pressure_summary`: compara `Periodo normal` contra `Ultimos 3 dias uteis`.
+
+Essa analise existe para demonstrar concentracao de faturamento no fechamento do mes e seu impacto em lead time, atrasos, valor financeiro e severidade.
 
 ### Score de criticidade v2
 

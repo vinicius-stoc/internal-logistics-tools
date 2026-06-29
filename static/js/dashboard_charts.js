@@ -119,6 +119,23 @@
       ];
     }
 
+    if (metadata && metadata.issue_date) {
+      const parsedValue = context.dataset.yAxisID === "y1" ? context.parsed.y : context.raw;
+      const valueLine = context.dataset.yAxisID === "y1"
+        ? `${context.dataset.label}: ${formatPercentage(parsedValue)}`
+        : `${context.dataset.label}: ${parsedValue}`;
+
+      return [
+        metadata.issue_date,
+        valueLine,
+        `Faturados: ${metadata.total_records}`,
+        `Atrasos operacionais: ${metadata.operational_late_records}`,
+        `Atrasos transportadora: ${metadata.carrier_late_records}`,
+        `Atraso operacional: ${formatPercentage(metadata.operational_late_percentage)}`,
+        `Atraso transportadora: ${formatPercentage(metadata.carrier_late_percentage)}`,
+      ];
+    }
+
     const parsedValue = context.parsed && context.parsed.y !== undefined ? context.parsed.y : context.raw;
     if (String(context.dataset.label || "").includes("%")) {
       return `${context.dataset.label}: ${formatPercentage(parsedValue)}`;

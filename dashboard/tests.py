@@ -124,12 +124,16 @@ class DashboardViewTests(TestCase):
         self.assertContains(response, 'id="chart-lead-time-distribution"')
         self.assertContains(response, 'id="chart-region-lead-time-comparison"')
         self.assertContains(response, 'id="chart-frequency-lead-time-comparison"')
-        self.assertContains(response, 'class="chart-frame"', count=8)
+        self.assertContains(response, 'id="chart-billing-vs-delivery-by-day"')
+        self.assertContains(response, 'id="chart-delay-by-issue-day"')
+        self.assertContains(response, 'class="chart-frame"', count=10)
         self.assertContains(response, "dashboard_charts.js")
         self.assertContains(response, "dashboard_help.js")
         self.assertContains(response, 'id="dashboard-explanations-data"')
         self.assertContains(response, 'data-help-key="cards.operational_sla_rate"')
         self.assertContains(response, 'data-help-key="charts.region_lead_time_comparison"')
+        self.assertContains(response, "Pressao Comercial")
+        self.assertContains(response, 'data-help-key="charts.billing_vs_delivery_by_day"')
 
     def test_home_links_to_dashboard(self):
         self.client.force_login(self.viewer)
@@ -377,6 +381,10 @@ class DashboardAnalyticsTests(TestCase):
         self.assertEqual(context["cards"]["delayed_invoice_value"], "0.00")
         self.assertEqual(context["cards"]["status_inconsistency_count"], 0)
         self.assertEqual(context["cards"]["status_inconsistency_percentage"], "0.00")
+        self.assertEqual(context["cards"]["peak_billing_day"]["records"], 0)
+        self.assertEqual(context["cards"]["last_3_business_days_records"], 0)
+        self.assertEqual(context["cards"]["last_3_business_days_percentage"], "0.00")
+        self.assertEqual(context["cards"]["normal_daily_average_records"], "0.00")
         self.assertEqual(context["cards"]["top_critical_route"]["route"], "Sem dados")
         self.assertFalse(context["metadata"]["has_data"])
         self.assertIsNone(context["metadata"]["last_successful_import"])
@@ -390,6 +398,8 @@ class DashboardAnalyticsTests(TestCase):
         self.assertIn("lead_time_distribution", context["charts"])
         self.assertIn("region_lead_time_comparison", context["charts"])
         self.assertIn("frequency_lead_time_comparison", context["charts"])
+        self.assertIn("billing_vs_delivery_by_day", context["charts"])
+        self.assertIn("delay_by_issue_day", context["charts"])
         self.assertIn("driver_outliers", context["tables"])
         self.assertIn("critical_routes", context["tables"])
         self.assertIn("critical_cities", context["tables"])
@@ -397,6 +407,7 @@ class DashboardAnalyticsTests(TestCase):
         self.assertIn("critical_frequencies", context["tables"])
         self.assertIn("invoice_outliers", context["tables"])
         self.assertIn("status_inconsistencies", context["tables"])
+        self.assertIn("commercial_pressure_summary", context["tables"])
         self.assertIn("cards", context["explanations"])
         self.assertIn("charts", context["explanations"])
         self.assertIn("tables", context["explanations"])
@@ -644,6 +655,67 @@ class DashboardAnalyticsTests(TestCase):
         self.assertEqual(charts["frequency_lead_time_comparison"]["data"]["labels"], ["DIARIA"])
 
         json.dumps(charts)
+
+    def test_commercial_pressure_contracts_compare_billing_and_delivery(self):
+        batch = self._create_batch()
+        self._create_record(
+            batch=batch,
+            row_number=1,
+            invoice_number="1001",
+            invoice_issue_date=date(2026, 5, 26),
+            customer_delivery_date=date(2026, 5, 27),
+            operational_lead_time_hours=Decimal("12.00"),
+            carrier_lead_time_hours=Decimal("6.00"),
+        )
+        self._create_record(
+            batch=batch,
+            row_number=2,
+            invoice_number="1002",
+            invoice_issue_date=date(2026, 5, 27),
+            customer_delivery_date=date(2026, 5, 29),
+            operational_lead_time_hours=Decimal("80.00"),
+            carrier_lead_time_hours=Decimal("30.00"),
+            is_operational_late=True,
+            is_carrier_late=True,
+        )
+        self._create_record(
+            batch=batch,
+            row_number=3,
+            invoice_number="1003",
+            invoice_issue_date=date(2026, 5, 27),
+            customer_delivery_date=date(2026, 5, 29),
+            operational_lead_time_hours=Decimal("90.00"),
+            carrier_lead_time_hours=Decimal("40.00"),
+            is_operational_late=True,
+            is_carrier_late=True,
+        )
+
+        context = get_dashboard_context(DashboardFilters())
+
+        self.assertEqual(context["cards"]["peak_billing_day"]["date"], "2026-05-27")
+        self.assertEqual(context["cards"]["peak_billing_day"]["records"], 2)
+        self.assertEqual(context["cards"]["last_3_business_days_records"], 2)
+        self.assertEqual(context["cards"]["last_3_business_days_percentage"], "66.67")
+        self.assertEqual(
+            context["charts"]["billing_vs_delivery_by_day"]["data"]["labels"],
+            ["2026-05-26", "2026-05-27", "2026-05-29"],
+        )
+        self.assertEqual(
+            context["charts"]["billing_vs_delivery_by_day"]["data"]["datasets"][0]["data"],
+            [1, 2, 0],
+        )
+        self.assertEqual(
+            context["charts"]["billing_vs_delivery_by_day"]["data"]["datasets"][1]["data"],
+            [0, 1, 2],
+        )
+        self.assertEqual(context["tables"]["commercial_pressure_summary"][0]["period"], "Periodo normal")
+        self.assertEqual(context["tables"]["commercial_pressure_summary"][0]["records"], 1)
+        self.assertEqual(context["tables"]["commercial_pressure_summary"][1]["period"], "Ultimos 3 dias uteis")
+        self.assertEqual(context["tables"]["commercial_pressure_summary"][1]["records"], 2)
+        self.assertEqual(
+            context["tables"]["commercial_pressure_summary"][1]["operational_late_percentage"],
+            "100.00",
+        )
 
     def test_new_dashboard_tables_are_available(self):
         batch = self._create_batch()
