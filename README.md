@@ -126,43 +126,115 @@ python manage.py check
 
 O dashboard consome somente dados persistidos em `LeadTimeRecord` e metadados de `ImportBatch`.
 
-O dashboard nao le Excel, nao conecta SFTP e nao recalcula dados da planilha original. Os filtros continuam aplicados sobre `invoice_issue_date`, `driver_name`, `route`, `business_unit`, `delivery_status` e `cargo_status`.
+O dashboard nao le Excel, nao conecta SFTP e nao recalcula dados da planilha original. Os filtros sao aplicados sobre dados persistidos no banco: `invoice_issue_date`, `driver_name`, `route`, `business_unit`, `region`, `frequency`, `delivery_status` e `cargo_status`.
 
-Cards gerenciais:
+### Regras de SLA
 
-- `total_records`: registros.
-- `delivered_records`: entregues.
-- `total_invoice_value`: valor total NF.
-- `average_operational_lead_time_hours`: lead time operacional medio.
-- `average_carrier_lead_time_hours`: lead time transportadora medio.
-- `operational_late_percentage`: atraso operacional.
-- `carrier_late_percentage`: atraso transportadora.
-- `operational_sla_rate`: SLA operacional.
-- `carrier_sla_rate`: SLA transportadora.
-- `operational_lead_time_p90_hours`: P90 operacional.
-- `carrier_lead_time_p90_hours`: P90 transportadora.
-- `delayed_invoice_value`: valor NF em atraso.
-- `top_critical_route`: ponto critico por pauta/rota.
+O lead time e calculado em horas uteis.
 
-Graficos:
+- SLA operacional: alvo de 48h uteis, medido da emissao da NF ate a entrega.
+- SLA transportadora: alvo de 24h uteis, medido do carregamento ate a entrega.
 
-- `records_by_day`: volume diario.
-- `driver_efficiency_scatter`: eficiencia por motorista, cruzando volume, lead time, valor NF e score.
-- `critical_routes_ranking`: ranking de rotas por criticidade.
-- `weekday_bottleneck`: gargalo por dia da semana.
-- `delay_pareto`: Pareto de atrasos por rota.
-- `lead_time_distribution`: distribuicao de lead time por faixas.
+Formulas:
 
-Tabelas:
+- `operational_sla_rate = ((total_records - operational_late_records) / total_records) * 100`
+- `carrier_sla_rate = ((total_records - carrier_late_records) / total_records) * 100`
+- `operational_late_percentage = (operational_late_records / total_records) * 100`
+- `carrier_late_percentage = (carrier_late_records / total_records) * 100`
 
-- `driver_outliers`: motoristas fora da curva.
+### Cards
+
+- `total_records`: total de registros filtrados.
+- `delivered_records`: registros em que `delivery_status` contem `entreg`.
+- `total_invoice_value`: soma de `invoice_value`.
+- `delayed_invoice_value`: soma de `invoice_value` dos registros com atraso operacional ou transportadora.
+- `operational_sla_rate`: entregas dentro do alvo operacional de 48h uteis.
+- `carrier_sla_rate`: entregas dentro do alvo da transportadora de 24h uteis.
+- `operational_lead_time_p90_hours`: percentil 90 do lead time operacional.
+- `carrier_lead_time_p90_hours`: percentil 90 do lead time da transportadora.
+- `average_operational_lead_time_hours`: media de `operational_lead_time_hours`.
+- `average_carrier_lead_time_hours`: media de `carrier_lead_time_hours`.
+- `operational_late_percentage`: percentual de registros acima de 48h uteis.
+- `carrier_late_percentage`: percentual de registros acima de 24h uteis.
+- `top_critical_route`: rota com maior score de criticidade v2.
+- `pending_records`: `total_records - delivered_records`.
+- `status_inconsistency_count`: entregas concluidas com status de carga incoerente.
+- `status_inconsistency_percentage`: percentual de divergencias de status sobre o total filtrado.
+
+### Graficos
+
+- `records_by_day`: volume por data de emissao da NF.
+- `driver_efficiency_scatter`: volume x lead time medio por motorista, com raio proporcional ao valor NF.
+- `critical_routes_ranking`: ranking de rotas por score de criticidade v2.
+- `weekday_bottleneck`: percentual de atraso por dia da semana.
+- `delay_pareto`: rotas que concentram atrasos e percentual acumulado.
+- `lead_time_distribution`: distribuicao de lead time por faixas de horas.
+- `region_lead_time_comparison`: lead time e atraso por regiao, quando a coluna opcional existe.
+- `frequency_lead_time_comparison`: lead time e atraso por frequencia, quando a coluna opcional existe.
+
+### Tabelas
+
+- `driver_outliers`: motoristas fora da curva por volume, atrasos, valor, severidade e score.
 - `critical_routes`: rotas criticas.
 - `critical_cities`: cidades criticas.
-- `invoice_outliers`: notas fiscais fora da curva.
+- `critical_regions`: regioes criticas, quando `region` estiver preenchido.
+- `critical_frequencies`: frequencias criticas, quando `frequency` estiver preenchido.
+- `invoice_outliers`: notas fiscais com maiores lead times.
+- `status_inconsistencies`: registros entregues com status de carga nao entregue ou vazio.
 
-O filtro de periodo usa `invoice_issue_date`, por ser campo obrigatorio e indexado. O label visual de pauta usa o campo tecnico `route`.
+### Score de criticidade v2
 
-Regiao e frequencia ainda nao foram implementadas porque nao existem como campos persistidos no model atual. Se esses atributos forem confirmados na planilha original, devem entrar em etapa futura com modelagem e migration aprovadas antes do uso analitico.
+O score nao e percentual de atraso. Ele e uma pontuacao relativa de prioridade dentro dos dados filtrados.
+
+Para cada registro:
+
+- `operational_delay_hours = max(operational_lead_time_hours - 48, 0)`
+- `carrier_delay_hours = max(carrier_lead_time_hours - 24, 0)`
+- `total_delay_severity_hours = operational_delay_hours + carrier_delay_hours`
+
+Para cada grupo, o dashboard calcula participacao em volume, atrasos, valor financeiro e severidade de atraso:
+
+```text
+criticality_score =
+((records_share * 0.20)
++ (delayed_share * 0.30)
++ (value_share * 0.20)
++ (severity_share * 0.30)) * 100
+```
+
+Quanto maior o score, maior a prioridade gerencial.
+
+### Divergencia de status
+
+Um registro e divergente quando:
+
+- `delivery_status` contem `entreg`, sem diferenciar maiusculas;
+- e `cargo_status` nao contem `entreg` ou esta vazio.
+
+Essa analise aponta falha de atualizacao operacional ou inconsistencia sistemica entre carga e entrega.
+
+### Region e frequency
+
+`region` e `frequency` sao campos opcionais da planilha fonte.
+
+- A validacao obrigatoria continua limitada a `A:AH`.
+- Arquivos antigos sem essas colunas continuam funcionando.
+- Quando as colunas opcionais existem, os valores sao persistidos em `LeadTimeRecord`.
+- Quando ausentes, os campos sao salvos como string vazia.
+- Graficos e tabelas de regiao/frequencia ficam vazios quando nao ha dados preenchidos.
+
+Cabecalhos aceitos:
+
+- Regiao: `Regiao`, `Regiao` com acento, `REGIAO`.
+- Frequencia: `Frequencia`, `Frequencia` com acento, `FREQ`, `FREQUENCIA`.
+
+### Explicacoes no dashboard
+
+Cards, graficos, tabelas e score possuem botao `?`.
+
+- Hover: mostra resumo curto.
+- Clique: abre explicacao completa com calculo, insight e formula.
+- SweetAlert e usado quando disponivel; caso contrario, o fallback e `alert`.
 
 ## Exportacao Excel
 

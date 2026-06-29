@@ -1,6 +1,7 @@
 from datetime import datetime, time
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
+import unicodedata
 
 import openpyxl
 
@@ -48,6 +49,12 @@ FIELD_BY_POSITION = {
     32: "notes",
     33: "seller_code",
     34: "team_code",
+}
+
+OPTIONAL_FIELD_BY_HEADER = {
+    "REGIAO": "region",
+    "FREQUENCIA": "frequency",
+    "FREQ": "frequency",
 }
 
 REQUIRED_FIELDS = {
@@ -100,6 +107,7 @@ def read_lead_time_rows(file_path):
             )
         )
         validate_headers(header_values)
+        optional_positions = _get_optional_positions(header_values)
 
         empty_rows = 0
         for row_number, row in enumerate(
@@ -114,17 +122,41 @@ def read_lead_time_rows(file_path):
 
             empty_rows = 0
             try:
-                yield row_number, _normalize_row(row), None
+                yield row_number, _normalize_row(row, optional_positions), None
             except RowNormalizationError as exc:
                 yield row_number, None, exc
     finally:
         workbook.close()
 
 
-def _normalize_row(row):
+def _get_optional_positions(header_values):
+    optional_positions = {}
+    for position, header in enumerate(header_values, start=1):
+        normalized_header = _normalize_header(header)
+        field_name = OPTIONAL_FIELD_BY_HEADER.get(normalized_header)
+        if field_name and field_name not in optional_positions:
+            optional_positions[field_name] = position
+    return optional_positions
+
+
+def _normalize_header(value):
+    if value is None:
+        return ""
+    text = unicodedata.normalize("NFKD", str(value).strip())
+    text = "".join(character for character in text if not unicodedata.combining(character))
+    return text.upper()
+
+
+def _normalize_row(row, optional_positions=None):
     normalized = {}
     for position, field_name in FIELD_BY_POSITION.items():
         value = row[position - 1] if len(row) >= position else None
+        normalized[field_name] = _clean_value(value)
+
+    optional_positions = optional_positions or {}
+    for field_name in ("region", "frequency"):
+        position = optional_positions.get(field_name)
+        value = row[position - 1] if position and len(row) >= position else None
         normalized[field_name] = _clean_value(value)
 
     _coerce_types(normalized)
@@ -158,6 +190,8 @@ def _coerce_types(row):
         "customer_code",
         "customer_name",
         "city",
+        "region",
+        "frequency",
         "invoice_status",
         "cargo_status",
         "delivery_status",

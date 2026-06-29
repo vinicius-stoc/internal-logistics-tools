@@ -60,7 +60,9 @@
         raw.driver_name,
         `Registros: ${raw.total_records}`,
         `Entregues: ${raw.delivered_records}`,
+        `Atrasados: ${raw.delayed_records || 0}`,
         `Valor NF: ${formatCurrency(raw.total_invoice_value)}`,
+        `Severidade atraso: ${formatNumber(raw.delay_severity_hours)}h`,
         `LT operacional medio: ${formatNumber(raw.average_operational_lead_time_hours)}h`,
         `LT transportadora medio: ${formatNumber(raw.average_carrier_lead_time_hours)}h`,
         `Atraso operacional: ${formatPercentage(raw.operational_late_percentage)}`,
@@ -69,9 +71,10 @@
       ];
     }
 
-    if (metadata && metadata.route) {
+    if (metadata && (metadata.route || metadata.region || metadata.frequency)) {
+      const label = metadata.route || metadata.region || metadata.frequency;
       const lines = [
-        metadata.route,
+        label,
         `Registros: ${metadata.total_records || 0}`,
       ];
 
@@ -80,6 +83,9 @@
       }
       if (metadata.total_invoice_value !== undefined) {
         lines.push(`Valor NF: ${formatCurrency(metadata.total_invoice_value)}`);
+      }
+      if (metadata.delay_severity_hours !== undefined) {
+        lines.push(`Severidade atraso: ${formatNumber(metadata.delay_severity_hours)}h`);
       }
       if (metadata.average_operational_lead_time_hours !== undefined) {
         lines.push(`LT operacional medio: ${formatNumber(metadata.average_operational_lead_time_hours)}h`);

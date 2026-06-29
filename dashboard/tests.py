@@ -78,6 +78,8 @@ class DashboardViewTests(TestCase):
                 "driver_name": "BEATRIZ GOMES",
                 "route": "RT030",
                 "business_unit": "TABACO",
+                "region": "SUL",
+                "frequency": "DIARIA",
                 "delivery_status": "ENTREGUE",
                 "cargo_status": "Ativa",
             },
@@ -86,6 +88,8 @@ class DashboardViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["filters"]["date_start"], "2026-05-01")
         self.assertEqual(response.context["filters"]["route"], "RT030")
+        self.assertEqual(response.context["filters"]["region"], "SUL")
+        self.assertEqual(response.context["filters"]["frequency"], "DIARIA")
 
     def test_dashboard_context_contains_expected_contract_keys(self):
         self.client.force_login(self.viewer)
@@ -96,6 +100,7 @@ class DashboardViewTests(TestCase):
         self.assertIn("charts", response.context)
         self.assertIn("filter_options", response.context)
         self.assertIn("metadata", response.context)
+        self.assertIn("explanations", response.context)
 
     def test_dashboard_renders_without_data(self):
         self.client.force_login(self.viewer)
@@ -117,8 +122,14 @@ class DashboardViewTests(TestCase):
         self.assertContains(response, 'id="chart-weekday-bottleneck"')
         self.assertContains(response, 'id="chart-delay-pareto"')
         self.assertContains(response, 'id="chart-lead-time-distribution"')
-        self.assertContains(response, 'class="chart-frame"', count=6)
+        self.assertContains(response, 'id="chart-region-lead-time-comparison"')
+        self.assertContains(response, 'id="chart-frequency-lead-time-comparison"')
+        self.assertContains(response, 'class="chart-frame"', count=8)
         self.assertContains(response, "dashboard_charts.js")
+        self.assertContains(response, "dashboard_help.js")
+        self.assertContains(response, 'id="dashboard-explanations-data"')
+        self.assertContains(response, 'data-help-key="cards.operational_sla_rate"')
+        self.assertContains(response, 'data-help-key="charts.region_lead_time_comparison"')
 
     def test_home_links_to_dashboard(self):
         self.client.force_login(self.viewer)
@@ -210,6 +221,8 @@ class DashboardExportTests(TestCase):
         worksheet = workbook["Dados filtrados"]
         self.assertEqual(worksheet.max_row, 1)
         self.assertEqual(worksheet["A1"].value, "Unidade de negocio")
+        self.assertEqual(worksheet["G1"].value, "Regiao")
+        self.assertEqual(worksheet["H1"].value, "Frequencia")
 
     def test_export_with_filters_returns_only_filtered_records(self):
         batch = self._create_batch()
@@ -220,6 +233,8 @@ class DashboardExportTests(TestCase):
             driver_name="BEATRIZ GOMES",
             route="RT030",
             business_unit="TABACO",
+            region="SUL",
+            frequency="DIARIA",
             delivery_status="ENTREGUE",
             cargo_status="Ativa",
             invoice_issue_date=date(2026, 5, 1),
@@ -245,6 +260,8 @@ class DashboardExportTests(TestCase):
                 "driver_name": "BEATRIZ GOMES",
                 "route": "RT030",
                 "business_unit": "TABACO",
+                "region": "SUL",
+                "frequency": "DIARIA",
                 "delivery_status": "ENTREGUE",
                 "cargo_status": "Ativa",
             },
@@ -253,7 +270,9 @@ class DashboardExportTests(TestCase):
         worksheet = workbook["Dados filtrados"]
 
         self.assertEqual(worksheet.max_row, 2)
-        self.assertEqual(worksheet["H2"].value, "1001")
+        self.assertEqual(worksheet["G2"].value, "SUL")
+        self.assertEqual(worksheet["H2"].value, "DIARIA")
+        self.assertEqual(worksheet["J2"].value, "1001")
         self.assertEqual(worksheet["D2"].value, "BEATRIZ GOMES")
         self.assertEqual(worksheet["E2"].value, "RT030")
 
@@ -315,6 +334,8 @@ class DashboardExportTests(TestCase):
             "customer_code": "6248888",
             "customer_name": "CLIENTE TESTE LTDA",
             "city": "PONTA GROSSA",
+            "region": "",
+            "frequency": "",
             "invoice_value": Decimal("1674.40"),
             "invoice_status": "AZP8G94",
             "cargo_status": "Ativa",
@@ -354,19 +375,32 @@ class DashboardAnalyticsTests(TestCase):
         self.assertEqual(context["cards"]["operational_lead_time_p90_hours"], "0.00")
         self.assertEqual(context["cards"]["carrier_lead_time_p90_hours"], "0.00")
         self.assertEqual(context["cards"]["delayed_invoice_value"], "0.00")
+        self.assertEqual(context["cards"]["status_inconsistency_count"], 0)
+        self.assertEqual(context["cards"]["status_inconsistency_percentage"], "0.00")
         self.assertEqual(context["cards"]["top_critical_route"]["route"], "Sem dados")
         self.assertFalse(context["metadata"]["has_data"])
         self.assertIsNone(context["metadata"]["last_successful_import"])
+        self.assertEqual(context["metadata"]["operational_target_hours"], "48.00")
+        self.assertEqual(context["metadata"]["carrier_target_hours"], "24.00")
         self.assertIn("records_by_day", context["charts"])
         self.assertIn("driver_efficiency_scatter", context["charts"])
         self.assertIn("critical_routes_ranking", context["charts"])
         self.assertIn("weekday_bottleneck", context["charts"])
         self.assertIn("delay_pareto", context["charts"])
         self.assertIn("lead_time_distribution", context["charts"])
+        self.assertIn("region_lead_time_comparison", context["charts"])
+        self.assertIn("frequency_lead_time_comparison", context["charts"])
         self.assertIn("driver_outliers", context["tables"])
         self.assertIn("critical_routes", context["tables"])
         self.assertIn("critical_cities", context["tables"])
+        self.assertIn("critical_regions", context["tables"])
+        self.assertIn("critical_frequencies", context["tables"])
         self.assertIn("invoice_outliers", context["tables"])
+        self.assertIn("status_inconsistencies", context["tables"])
+        self.assertIn("cards", context["explanations"])
+        self.assertIn("charts", context["explanations"])
+        self.assertIn("tables", context["explanations"])
+        self.assertIn("scores", context["explanations"])
 
         json.dumps(context)
 
@@ -379,6 +413,7 @@ class DashboardAnalyticsTests(TestCase):
             invoice_issue_date=date(2026, 5, 1),
             invoice_value=Decimal("100.00"),
             delivery_status="ENTREGUE",
+            cargo_status="Ativa",
             operational_lead_time_hours=Decimal("10.00"),
             carrier_lead_time_hours=Decimal("5.00"),
             is_operational_late=True,
@@ -416,9 +451,11 @@ class DashboardAnalyticsTests(TestCase):
         self.assertEqual(cards["carrier_lead_time_p90_hours"], "7.00")
         self.assertEqual(cards["delayed_invoice_value"], "150.50")
         self.assertEqual(cards["top_critical_route"]["route"], "RT030")
-        self.assertEqual(cards["top_critical_route"]["criticality_score"], "100.00")
+        self.assertEqual(cards["top_critical_route"]["criticality_score"], "70.00")
         self.assertEqual(cards["top_critical_route"]["total_records"], 2)
         self.assertEqual(cards["top_critical_route"]["delayed_percentage"], "100.00")
+        self.assertEqual(cards["status_inconsistency_count"], 1)
+        self.assertEqual(cards["status_inconsistency_percentage"], "50.00")
 
     def test_percentile_cards_handle_small_and_empty_sets(self):
         batch = self._create_batch()
@@ -481,6 +518,37 @@ class DashboardAnalyticsTests(TestCase):
 
         self.assertEqual(cards["delayed_invoice_value"], "205.50")
 
+    def test_criticality_score_considers_delay_severity(self):
+        batch = self._create_batch()
+        self._create_record(
+            batch=batch,
+            row_number=1,
+            invoice_number="1001",
+            route="RT_SEVERE",
+            invoice_value=Decimal("100.00"),
+            operational_lead_time_hours=Decimal("148.00"),
+            carrier_lead_time_hours=Decimal("24.00"),
+            is_operational_late=True,
+            is_carrier_late=False,
+        )
+        self._create_record(
+            batch=batch,
+            row_number=2,
+            invoice_number="1002",
+            route="RT_MILD",
+            invoice_value=Decimal("100.00"),
+            operational_lead_time_hours=Decimal("49.00"),
+            carrier_lead_time_hours=Decimal("24.00"),
+            is_operational_late=True,
+            is_carrier_late=False,
+        )
+
+        routes = get_dashboard_context(DashboardFilters())["tables"]["critical_routes"]
+
+        self.assertEqual(routes[0]["route"], "RT_SEVERE")
+        self.assertEqual(routes[0]["delay_severity_hours"], "100.00")
+        self.assertEqual(routes[1]["delay_severity_hours"], "1.00")
+
     def test_filters_are_applied_to_queryset(self):
         batch = self._create_batch()
         self._create_record(
@@ -490,6 +558,8 @@ class DashboardAnalyticsTests(TestCase):
             driver_name="BEATRIZ GOMES",
             route="RT030",
             business_unit="TABACO",
+            region="SUL",
+            frequency="DIARIA",
             delivery_status="ENTREGUE",
             cargo_status="Ativa",
             invoice_issue_date=date(2026, 5, 1),
@@ -501,6 +571,8 @@ class DashboardAnalyticsTests(TestCase):
             driver_name="ANA SILVA",
             route="RT010",
             business_unit="ALIMENTOS",
+            region="NORTE",
+            frequency="SEMANAL",
             delivery_status="PENDENTE",
             cargo_status="Cancelada",
             invoice_issue_date=date(2026, 6, 1),
@@ -512,6 +584,8 @@ class DashboardAnalyticsTests(TestCase):
             driver_name="BEATRIZ GOMES",
             route="RT030",
             business_unit="TABACO",
+            region="SUL",
+            frequency="DIARIA",
             delivery_status="ENTREGUE",
             cargo_status="Ativa",
         )
@@ -520,6 +594,8 @@ class DashboardAnalyticsTests(TestCase):
         self.assertEqual(context["cards"]["total_records"], 1)
         self.assertEqual(context["tables"]["driver_outliers"][0]["driver_name"], "BEATRIZ GOMES")
         self.assertEqual(context["tables"]["critical_routes"][0]["route"], "RT030")
+        self.assertEqual(context["tables"]["critical_regions"][0]["region"], "SUL")
+        self.assertEqual(context["tables"]["critical_frequencies"][0]["frequency"], "DIARIA")
 
     def test_chart_contracts_have_stable_json_shape(self):
         batch = self._create_batch()
@@ -529,6 +605,8 @@ class DashboardAnalyticsTests(TestCase):
             invoice_number="1001",
             driver_name="BEATRIZ GOMES",
             route="RT030",
+            region="SUL",
+            frequency="DIARIA",
             invoice_issue_date=date(2026, 5, 1),
             delivery_status="ENTREGUE",
         )
@@ -538,6 +616,8 @@ class DashboardAnalyticsTests(TestCase):
             invoice_number="1002",
             driver_name="BEATRIZ GOMES",
             route="RT030",
+            region="SUL",
+            frequency="DIARIA",
             invoice_issue_date=date(2026, 5, 2),
             delivery_status="PENDENTE",
         )
@@ -558,6 +638,10 @@ class DashboardAnalyticsTests(TestCase):
         self.assertEqual(charts["delay_pareto"]["data"]["datasets"][1]["type"], "line")
         self.assertEqual(charts["lead_time_distribution"]["id"], "lead_time_distribution")
         self.assertEqual(len(charts["lead_time_distribution"]["data"]["datasets"]), 2)
+        self.assertEqual(charts["region_lead_time_comparison"]["id"], "region_lead_time_comparison")
+        self.assertEqual(charts["region_lead_time_comparison"]["data"]["labels"], ["SUL"])
+        self.assertEqual(charts["frequency_lead_time_comparison"]["id"], "frequency_lead_time_comparison")
+        self.assertEqual(charts["frequency_lead_time_comparison"]["data"]["labels"], ["DIARIA"])
 
         json.dumps(charts)
 
@@ -570,10 +654,14 @@ class DashboardAnalyticsTests(TestCase):
             driver_name="BEATRIZ GOMES",
             route="RT030",
             city="PONTA GROSSA",
+            region="SUL",
+            frequency="DIARIA",
             invoice_value=Decimal("100.00"),
             operational_lead_time_hours=Decimal("120.00"),
             carrier_lead_time_hours=Decimal("72.00"),
             is_operational_late=True,
+            cargo_status="Ativa",
+            delivery_status="ENTREGUE",
         )
 
         tables = get_dashboard_context(DashboardFilters())["tables"]
@@ -582,7 +670,10 @@ class DashboardAnalyticsTests(TestCase):
         self.assertEqual(tables["critical_routes"][0]["route"], "RT030")
         self.assertEqual(tables["critical_routes"][0]["served_cities"], 1)
         self.assertEqual(tables["critical_cities"][0]["city"], "PONTA GROSSA")
+        self.assertEqual(tables["critical_regions"][0]["region"], "SUL")
+        self.assertEqual(tables["critical_frequencies"][0]["frequency"], "DIARIA")
         self.assertEqual(tables["invoice_outliers"][0]["invoice_number"], "1001")
+        self.assertEqual(tables["status_inconsistencies"][0]["invoice_number"], "1001")
 
         json.dumps(tables)
 
@@ -643,6 +734,8 @@ class DashboardAnalyticsTests(TestCase):
             "customer_code": "6248888",
             "customer_name": "CLIENTE TESTE LTDA",
             "city": "PONTA GROSSA",
+            "region": "",
+            "frequency": "",
             "invoice_value": Decimal("1674.40"),
             "invoice_status": "AZP8G94",
             "cargo_status": "Ativa",
