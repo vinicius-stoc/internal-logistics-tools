@@ -27,6 +27,115 @@
     });
   }
 
+  function formatNumber(value) {
+    return Number(value || 0).toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  function formatCurrency(value) {
+    return Number(value || 0).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  }
+
+  function formatPercentage(value) {
+    return `${formatNumber(value)}%`;
+  }
+
+  function buildTooltipLabel(context) {
+    const raw = context.raw || {};
+    const chartConfig = context.chart.config || {};
+    const chartMetadata = (
+      chartConfig.metadata ||
+      (chartConfig._config && chartConfig._config.metadata) ||
+      null
+    );
+    const metadata = Array.isArray(chartMetadata) ? chartMetadata[context.dataIndex] : null;
+
+    if (raw.driver_name) {
+      return [
+        raw.driver_name,
+        `Registros: ${raw.total_records}`,
+        `Entregues: ${raw.delivered_records}`,
+        `Valor NF: ${formatCurrency(raw.total_invoice_value)}`,
+        `LT operacional medio: ${formatNumber(raw.average_operational_lead_time_hours)}h`,
+        `LT transportadora medio: ${formatNumber(raw.average_carrier_lead_time_hours)}h`,
+        `Atraso operacional: ${formatPercentage(raw.operational_late_percentage)}`,
+        `Atraso transportadora: ${formatPercentage(raw.carrier_late_percentage)}`,
+        `Score: ${formatNumber(raw.criticality_score)}`,
+      ];
+    }
+
+    if (metadata && metadata.route) {
+      const lines = [
+        metadata.route,
+        `Registros: ${metadata.total_records || 0}`,
+      ];
+
+      if (metadata.delayed_records !== undefined) {
+        lines.push(`Atrasados: ${metadata.delayed_records}`);
+      }
+      if (metadata.total_invoice_value !== undefined) {
+        lines.push(`Valor NF: ${formatCurrency(metadata.total_invoice_value)}`);
+      }
+      if (metadata.average_operational_lead_time_hours !== undefined) {
+        lines.push(`LT operacional medio: ${formatNumber(metadata.average_operational_lead_time_hours)}h`);
+      }
+      if (metadata.average_carrier_lead_time_hours !== undefined) {
+        lines.push(`LT transportadora medio: ${formatNumber(metadata.average_carrier_lead_time_hours)}h`);
+      }
+      if (metadata.operational_late_percentage !== undefined) {
+        lines.push(`Atraso operacional: ${formatPercentage(metadata.operational_late_percentage)}`);
+      }
+      if (metadata.carrier_late_percentage !== undefined) {
+        lines.push(`Atraso transportadora: ${formatPercentage(metadata.carrier_late_percentage)}`);
+      }
+      if (metadata.criticality_score !== undefined) {
+        lines.push(`Score: ${formatNumber(metadata.criticality_score)}`);
+      }
+      if (metadata.accumulated_percentage !== undefined) {
+        lines.push(`Acumulado: ${formatPercentage(metadata.accumulated_percentage)}`);
+      }
+
+      return lines;
+    }
+
+    if (metadata && metadata.weekday) {
+      return [
+        metadata.weekday,
+        `${context.dataset.label}: ${formatPercentage(context.parsed.y)}`,
+        `Registros: ${metadata.total_records}`,
+        `LT operacional medio: ${formatNumber(metadata.average_operational_lead_time_hours)}h`,
+        `LT transportadora medio: ${formatNumber(metadata.average_carrier_lead_time_hours)}h`,
+      ];
+    }
+
+    const parsedValue = context.parsed && context.parsed.y !== undefined ? context.parsed.y : context.raw;
+    if (String(context.dataset.label || "").includes("%")) {
+      return `${context.dataset.label}: ${formatPercentage(parsedValue)}`;
+    }
+    return `${context.dataset.label}: ${parsedValue}`;
+  }
+
+  function mergeOptions(baseOptions, chartOptions) {
+    const merged = Object.assign({}, baseOptions, chartOptions || {});
+    merged.plugins = Object.assign({}, baseOptions.plugins || {}, (chartOptions || {}).plugins || {});
+    merged.plugins.tooltip = Object.assign(
+      {},
+      (baseOptions.plugins || {}).tooltip || {},
+      (((chartOptions || {}).plugins || {}).tooltip || {})
+    );
+    merged.plugins.legend = Object.assign(
+      {},
+      (baseOptions.plugins || {}).legend || {},
+      (((chartOptions || {}).plugins || {}).legend || {})
+    );
+    return merged;
+  }
+
   function buildOptions(chart) {
     const baseOptions = {
       responsive: true,
@@ -35,10 +144,15 @@
         legend: {
           position: chart.type === "doughnut" ? "bottom" : "top",
         },
+        tooltip: {
+          callbacks: {
+            label: buildTooltipLabel,
+          },
+        },
       },
     };
 
-    return Object.assign({}, baseOptions, chart.options || {});
+    return mergeOptions(baseOptions, chart.options || {});
   }
 
   function applyVisualDefaults(chartConfig) {
@@ -54,7 +168,10 @@
     ];
 
     chartConfig.data.datasets = chartConfig.data.datasets.map((dataset, index) => {
-      if (chartConfig.type === "doughnut") {
+      const datasetType = dataset.type || chartConfig.type;
+      const color = palette[index % palette.length];
+
+      if (datasetType === "doughnut") {
         return Object.assign(
           {
             backgroundColor: palette,
@@ -64,10 +181,34 @@
         );
       }
 
+      if (datasetType === "line") {
+        return Object.assign(
+          {
+            backgroundColor: color,
+            borderColor: color,
+            borderWidth: 2,
+            fill: false,
+            tension: 0.25,
+          },
+          dataset
+        );
+      }
+
+      if (datasetType === "bubble") {
+        return Object.assign(
+          {
+            backgroundColor: "rgba(13, 110, 253, 0.35)",
+            borderColor: "#0d6efd",
+            borderWidth: 1,
+          },
+          dataset
+        );
+      }
+
       return Object.assign(
         {
-          backgroundColor: palette[index % palette.length],
-          borderColor: palette[index % palette.length],
+          backgroundColor: color,
+          borderColor: color,
           borderWidth: 1,
         },
         dataset
@@ -88,6 +229,7 @@
       type: chart.type,
       data: chart.data,
       options: buildOptions(chart),
+      metadata: chart.metadata || null,
     });
 
     new Chart(canvas, chartConfig);

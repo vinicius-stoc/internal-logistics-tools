@@ -126,14 +126,43 @@ python manage.py check
 
 O dashboard consome somente dados persistidos em `LeadTimeRecord` e metadados de `ImportBatch`.
 
-Contratos implementados nesta etapa:
+O dashboard nao le Excel, nao conecta SFTP e nao recalcula dados da planilha original. Os filtros continuam aplicados sobre `invoice_issue_date`, `driver_name`, `route`, `business_unit`, `delivery_status` e `cargo_status`.
 
-- filtros: `date_start`, `date_end`, `driver_name`, `route`, `business_unit`, `delivery_status`, `cargo_status`;
-- cards: totais, entregas, pendencias, valor de notas, medias de lead time e percentuais de atraso;
-- graficos: registros por dia, motorista, pauta, status de entrega e lead time medio por motorista;
-- tabelas: resumo por motorista e por pauta.
+Cards gerenciais:
+
+- `total_records`: registros.
+- `delivered_records`: entregues.
+- `total_invoice_value`: valor total NF.
+- `average_operational_lead_time_hours`: lead time operacional medio.
+- `average_carrier_lead_time_hours`: lead time transportadora medio.
+- `operational_late_percentage`: atraso operacional.
+- `carrier_late_percentage`: atraso transportadora.
+- `operational_sla_rate`: SLA operacional.
+- `carrier_sla_rate`: SLA transportadora.
+- `operational_lead_time_p90_hours`: P90 operacional.
+- `carrier_lead_time_p90_hours`: P90 transportadora.
+- `delayed_invoice_value`: valor NF em atraso.
+- `top_critical_route`: ponto critico por pauta/rota.
+
+Graficos:
+
+- `records_by_day`: volume diario.
+- `driver_efficiency_scatter`: eficiencia por motorista, cruzando volume, lead time, valor NF e score.
+- `critical_routes_ranking`: ranking de rotas por criticidade.
+- `weekday_bottleneck`: gargalo por dia da semana.
+- `delay_pareto`: Pareto de atrasos por rota.
+- `lead_time_distribution`: distribuicao de lead time por faixas.
+
+Tabelas:
+
+- `driver_outliers`: motoristas fora da curva.
+- `critical_routes`: rotas criticas.
+- `critical_cities`: cidades criticas.
+- `invoice_outliers`: notas fiscais fora da curva.
 
 O filtro de periodo usa `invoice_issue_date`, por ser campo obrigatorio e indexado. O label visual de pauta usa o campo tecnico `route`.
+
+Regiao e frequencia ainda nao foram implementadas porque nao existem como campos persistidos no model atual. Se esses atributos forem confirmados na planilha original, devem entrar em etapa futura com modelagem e migration aprovadas antes do uso analitico.
 
 ## Exportacao Excel
 
