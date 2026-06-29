@@ -63,8 +63,8 @@
         `Atrasados: ${raw.delayed_records || 0}`,
         `Valor NF: ${formatCurrency(raw.total_invoice_value)}`,
         `Severidade atraso: ${formatNumber(raw.delay_severity_hours)}h`,
-        `LT operacional medio: ${formatNumber(raw.average_operational_lead_time_hours)}h`,
-        `LT transportadora medio: ${formatNumber(raw.average_carrier_lead_time_hours)}h`,
+        `LT operacional médio: ${formatNumber(raw.average_operational_lead_time_hours)}h`,
+        `LT transportadora médio: ${formatNumber(raw.average_carrier_lead_time_hours)}h`,
         `Atraso operacional: ${formatPercentage(raw.operational_late_percentage)}`,
         `Atraso transportadora: ${formatPercentage(raw.carrier_late_percentage)}`,
         `Score: ${formatNumber(raw.criticality_score)}`,
@@ -88,10 +88,10 @@
         lines.push(`Severidade atraso: ${formatNumber(metadata.delay_severity_hours)}h`);
       }
       if (metadata.average_operational_lead_time_hours !== undefined) {
-        lines.push(`LT operacional medio: ${formatNumber(metadata.average_operational_lead_time_hours)}h`);
+        lines.push(`LT operacional médio: ${formatNumber(metadata.average_operational_lead_time_hours)}h`);
       }
       if (metadata.average_carrier_lead_time_hours !== undefined) {
-        lines.push(`LT transportadora medio: ${formatNumber(metadata.average_carrier_lead_time_hours)}h`);
+        lines.push(`LT transportadora médio: ${formatNumber(metadata.average_carrier_lead_time_hours)}h`);
       }
       if (metadata.operational_late_percentage !== undefined) {
         lines.push(`Atraso operacional: ${formatPercentage(metadata.operational_late_percentage)}`);
@@ -114,8 +114,8 @@
         metadata.weekday,
         `${context.dataset.label}: ${formatPercentage(context.parsed.y)}`,
         `Registros: ${metadata.total_records}`,
-        `LT operacional medio: ${formatNumber(metadata.average_operational_lead_time_hours)}h`,
-        `LT transportadora medio: ${formatNumber(metadata.average_carrier_lead_time_hours)}h`,
+        `LT operacional médio: ${formatNumber(metadata.average_operational_lead_time_hours)}h`,
+        `LT transportadora médio: ${formatNumber(metadata.average_carrier_lead_time_hours)}h`,
       ];
     }
 

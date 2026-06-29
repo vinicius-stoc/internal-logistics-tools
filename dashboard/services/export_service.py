@@ -39,8 +39,8 @@ def build_dashboard_export(filters: DashboardFilters) -> DashboardExportResult:
         _fill_data_sheet(data_sheet, queryset)
         _fill_summary_sheet(workbook, queryset, "Resumo motorista", "driver_name", "Motorista")
         _fill_summary_sheet(workbook, queryset, "Resumo pauta", "route", "Pauta")
-        _fill_summary_sheet(workbook, queryset, "Resumo regiao", "region", "Regiao")
-        _fill_summary_sheet(workbook, queryset, "Resumo frequencia", "frequency", "Frequencia")
+        _fill_summary_sheet(workbook, queryset, "Resumo região", "region", "Região")
+        _fill_summary_sheet(workbook, queryset, "Resumo frequência", "frequency", "Frequência")
 
         output = BytesIO()
         workbook.save(output)
@@ -50,7 +50,7 @@ def build_dashboard_export(filters: DashboardFilters) -> DashboardExportResult:
             content=output.getvalue(),
         )
     except Exception as exc:
-        raise DashboardExportError("Nao foi possivel gerar a exportacao Excel.") from exc
+        raise DashboardExportError("Não foi possível gerar a exportação Excel.") from exc
 
 
 def _get_filtered_queryset(filters):
@@ -90,17 +90,17 @@ def _get_filtered_queryset(filters):
 
 def _fill_data_sheet(worksheet, queryset):
     columns = [
-        ("Unidade de negocio", "business_unit", None),
-        ("Data emissao NF", "invoice_issue_date", "date"),
+        ("Unidade de negócio", "business_unit", None),
+        ("Data emissão NF", "invoice_issue_date", "date"),
         ("Data entrega cliente", "customer_delivery_date", "date"),
         ("Motorista", "driver_name", None),
         ("Pauta", "route", None),
         ("Cidade", "city", None),
-        ("Regiao", "region", None),
-        ("Frequencia", "frequency", None),
+        ("Região", "region", None),
+        ("Frequência", "frequency", None),
         ("Cliente", "customer_name", None),
         ("NF", "invoice_number", None),
-        ("Serie", "invoice_series", None),
+        ("Série", "invoice_series", None),
         ("Valor NF", "invoice_value", "currency"),
         ("Status carga", "cargo_status", None),
         ("Status entrega", "delivery_status", None),
@@ -136,8 +136,8 @@ def _fill_summary_sheet(workbook, queryset, title, field_name, label):
         ("Entregues", "delivered_records", "integer"),
         ("Pendentes", "pending_records", "integer"),
         ("Valor NF", "total_invoice_value", "currency"),
-        ("Lead time operacional medio (h)", "average_operational_lead_time_hours", "decimal"),
-        ("Lead time transportadora medio (h)", "average_carrier_lead_time_hours", "decimal"),
+        ("Lead time operacional médio (h)", "average_operational_lead_time_hours", "decimal"),
+        ("Lead time transportadora médio (h)", "average_carrier_lead_time_hours", "decimal"),
         ("Atraso operacional", "operational_late_records", "integer"),
         ("Atraso transportadora", "carrier_late_records", "integer"),
     ]
@@ -180,7 +180,7 @@ def _format_cell_value(value, value_type):
     if value is None:
         return ""
     if value_type == "boolean":
-        return "Sim" if value else "Nao"
+        return "Sim" if value else "Não"
     if value_type in {"currency", "decimal"}:
         return _decimal_to_number(value)
     if isinstance(value, (date, datetime)):

@@ -1,7 +1,7 @@
 {% if pagination.total_pages > 1 %}
-  <nav class="dashboard-table-pagination" aria-label="Paginacao da tabela">
+  <nav class="dashboard-table-pagination" aria-label="Paginação da tabela">
     <div class="small text-muted">
-      Exibindo {{ pagination.start_index }}-{{ pagination.end_index }} de {{ pagination.total_items }}
+      Exibindo {{ pagination.start_index }} a {{ pagination.end_index }} de {{ pagination.total_items }}
     </div>
     <ul class="pagination pagination-sm mb-0">
       <li class="page-item {% if not pagination.has_previous %}disabled{% endif %}">
@@ -24,7 +24,7 @@
           href="{{ pagination.next_url|default:'#' }}"
           {% if not pagination.has_next %}aria-disabled="true" tabindex="-1"{% endif %}
         >
-          Proxima
+          Próxima
         </a>
       </li>
     </ul>

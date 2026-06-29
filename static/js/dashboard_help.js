@@ -25,13 +25,13 @@
     return [
       explanation.summary,
       "",
-      "Como e calculado:",
+      "Como é calculado:",
       explanation.calculation,
       "",
       "Insight gerencial:",
       explanation.insight,
       "",
-      "Formula:",
+      "Fórmula:",
       explanation.formula,
     ].join("\n");
   }

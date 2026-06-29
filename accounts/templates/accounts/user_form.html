@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ title }} | Logistica Interna{% endblock %}
+{% block title %}{{ title }} | Logística Interna{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -24,7 +24,7 @@
                 <label class="form-check-label" for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
               </div>
             {% empty %}
-              <p class="text-muted mb-0">Execute setup_rbac para criar os grupos.</p>
+              <p class="text-muted mb-0">Nenhum grupo de acesso foi criado ainda.</p>
             {% endfor %}
           {% elif field.field.widget.input_type == "checkbox" %}
             <div class="form-check">
