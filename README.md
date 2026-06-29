@@ -21,7 +21,7 @@ Diretrizes principais:
 - `core`: estrutura visual base, templates globais e helpers compartilhados.
 - `accounts`: autenticacao e futuros fluxos administrativos de usuarios.
 - `imports`: importacao local/SFTP futura, validacao e persistencia.
-- `dashboard`: futura consulta agregada, filtros e contratos para graficos.
+- `dashboard`: consulta agregada, filtros, contratos para graficos e exportacao Excel.
 
 ## Setup local
 
@@ -135,6 +135,50 @@ Contratos implementados nesta etapa:
 
 O filtro de periodo usa `invoice_issue_date`, por ser campo obrigatorio e indexado. O label visual de pauta usa o campo tecnico `route`.
 
+## Exportacao Excel
+
+A exportacao do dashboard usa os mesmos filtros aplicados na tela e consome somente dados persistidos em `LeadTimeRecord`.
+
+Rota:
+
+```text
+/dashboard/export/excel/
+```
+
+Regras:
+
+- exige login;
+- exige troca de senha concluida;
+- exige permissao `accounts.export_dashboard`;
+- nao le a planilha original;
+- nao conecta SFTP;
+- gera `.xlsx` em memoria com `openpyxl`.
+
+## Demonstracao local
+
+Fluxo recomendado para apresentacao:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+Copy-Item .env.example .env
+python manage.py migrate
+python manage.py setup_rbac
+python manage.py createsuperuser
+python manage.py import_lead_time_records --file-path "data/Acompanhamento Lead Time - Tabaco mes de Maio 2026.xlsx"
+python manage.py runserver
+```
+
+No navegador:
+
+1. Acesse `http://127.0.0.1:8000/`.
+2. Faca login com usuario autorizado.
+3. Acesse o dashboard.
+4. Aplique filtros de periodo, motorista, pauta, unidade ou status.
+5. Clique em `Exportar Excel`.
+6. Abra o arquivo `.xlsx` gerado e confira a aba `Dados filtrados`.
+
 ## Escopo atual
 
 Esta base prepara o projeto para execucao local e evolucao futura. Ja implementa:
@@ -149,11 +193,11 @@ Esta base prepara o projeto para execucao local e evolucao futura. Ja implementa
 - RBAC simples com Django Groups e Permissions.
 - administracao interna basica de usuarios.
 - troca obrigatoria de senha no primeiro acesso.
+- exportacao Excel da visao filtrada do dashboard.
 
 Ainda nao implementa:
 
 - conexao SFTP real;
-- acabamento visual final dos graficos;
-- exportacao Excel;
+- scheduler em producao;
 - Celery ou Redis;
 - API REST completa.

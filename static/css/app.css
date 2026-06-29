@@ -42,6 +42,28 @@ form input[type="email"] {
   font-weight: 600;
 }
 
+.border.rounded {
+  background: #fff;
+}
+
+.btn {
+  white-space: nowrap;
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table thead th {
+  color: #495057;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.table tbody td {
+  vertical-align: middle;
+}
+
 .chart-panel {
   min-height: 0;
 }
@@ -69,6 +91,10 @@ form input[type="email"] {
 }
 
 @media (max-width: 575.98px) {
+  main .btn {
+    width: 100%;
+  }
+
   .chart-frame,
   .chart-frame-wide {
     height: 240px;
