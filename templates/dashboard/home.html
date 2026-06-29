@@ -38,7 +38,7 @@
       </select>
     </div>
     <div class="col-md-4">
-      <label class="form-label" for="business_unit">Unidade de negócio</label>
+      <label class="form-label" for="business_unit">Unidade de negocio</label>
       <select class="form-select" id="business_unit" name="business_unit">
         <option value="">Todas</option>
         {% for business_unit in filter_options.business_units %}
@@ -83,22 +83,22 @@
 
 {% if filter_errors %}
   <div class="alert alert-warning">
-    Alguns filtros foram ignorados por formato inválido.
+    Alguns filtros foram ignorados por formato invalido.
   </div>
 {% endif %}
 
 {% if metadata.last_successful_import %}
   <p class="text-muted">
-    Última importação válida: {{ metadata.last_successful_import.file_name }}
+    Ultima importacao valida: {{ metadata.last_successful_import.file_name }}
   </p>
 {% else %}
-  <p class="text-muted">Nenhuma importação válida encontrada.</p>
+  <p class="text-muted">Nenhuma importacao valida encontrada.</p>
 {% endif %}
 
 {% if not metadata.has_data %}
   <div class="alert alert-info">
     A exportacao Excel ainda pode ser gerada com os cabecalhos para conferencia dos filtros.
-    Nenhum dado encontrado para os filtros aplicados. Execute uma importação válida ou ajuste os filtros.
+    Nenhum dado encontrado para os filtros aplicados. Execute uma importacao valida ou ajuste os filtros.
   </div>
 {% endif %}
 
@@ -117,25 +117,49 @@
   </div>
   <div class="col-md-3">
     <div class="border rounded p-3 h-100">
-      <span class="text-muted">Pendentes</span>
-      <strong class="d-block fs-4">{{ cards.pending_records }}</strong>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="border rounded p-3 h-100">
       <span class="text-muted">Valor total NF</span>
       <strong class="d-block fs-4">R$ {{ cards.total_invoice_value }}</strong>
     </div>
   </div>
   <div class="col-md-3">
     <div class="border rounded p-3 h-100">
-      <span class="text-muted">Lead time operacional médio</span>
+      <span class="text-muted">Valor NF em atraso</span>
+      <strong class="d-block fs-4">R$ {{ cards.delayed_invoice_value }}</strong>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="border rounded p-3 h-100">
+      <span class="text-muted">SLA operacional</span>
+      <strong class="d-block fs-4">{{ cards.operational_sla_rate }}%</strong>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="border rounded p-3 h-100">
+      <span class="text-muted">SLA transportadora</span>
+      <strong class="d-block fs-4">{{ cards.carrier_sla_rate }}%</strong>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="border rounded p-3 h-100">
+      <span class="text-muted">P90 operacional</span>
+      <strong class="d-block fs-4">{{ cards.operational_lead_time_p90_hours }}h</strong>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="border rounded p-3 h-100">
+      <span class="text-muted">P90 transportadora</span>
+      <strong class="d-block fs-4">{{ cards.carrier_lead_time_p90_hours }}h</strong>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="border rounded p-3 h-100">
+      <span class="text-muted">Lead time operacional medio</span>
       <strong class="d-block fs-4">{{ cards.average_operational_lead_time_hours }}h</strong>
     </div>
   </div>
   <div class="col-md-3">
     <div class="border rounded p-3 h-100">
-      <span class="text-muted">Lead time transportadora médio</span>
+      <span class="text-muted">Lead time transportadora medio</span>
       <strong class="d-block fs-4">{{ cards.average_carrier_lead_time_hours }}h</strong>
     </div>
   </div>
@@ -151,10 +175,27 @@
       <strong class="d-block fs-4">{{ cards.carrier_late_percentage }}%</strong>
     </div>
   </div>
+  <div class="col-md-6">
+    <div class="border rounded p-3 h-100">
+      <span class="text-muted">Ponto critico</span>
+      <strong class="d-block fs-5">{{ cards.top_critical_route.route }}</strong>
+      <div class="small text-muted">
+        Score {{ cards.top_critical_route.criticality_score }} |
+        {{ cards.top_critical_route.total_records }} registros |
+        {{ cards.top_critical_route.delayed_percentage }}% atraso
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="border rounded p-3 h-100">
+      <span class="text-muted">Pendentes</span>
+      <strong class="d-block fs-4">{{ cards.pending_records }}</strong>
+    </div>
+  </div>
 </section>
 
 <section class="mt-3 border rounded p-3">
-  <h2 class="h5">Gráficos</h2>
+  <h2 class="h5">Graficos</h2>
   <div class="row g-3">
     <div class="col-lg-6">
       <div class="border rounded p-3 h-100 chart-panel">
@@ -166,33 +207,41 @@
     </div>
     <div class="col-lg-6">
       <div class="border rounded p-3 h-100 chart-panel">
-        <h3 class="h6">{{ charts.records_by_driver.title }}</h3>
+        <h3 class="h6">{{ charts.driver_efficiency_scatter.title }}</h3>
         <div class="chart-frame">
-          <canvas id="chart-records-by-driver"></canvas>
+          <canvas id="chart-driver-efficiency-scatter"></canvas>
         </div>
       </div>
     </div>
     <div class="col-lg-6">
       <div class="border rounded p-3 h-100 chart-panel">
-        <h3 class="h6">{{ charts.records_by_route.title }}</h3>
+        <h3 class="h6">{{ charts.critical_routes_ranking.title }}</h3>
         <div class="chart-frame">
-          <canvas id="chart-records-by-route"></canvas>
+          <canvas id="chart-critical-routes-ranking"></canvas>
         </div>
       </div>
     </div>
     <div class="col-lg-6">
       <div class="border rounded p-3 h-100 chart-panel">
-        <h3 class="h6">{{ charts.delivery_status_distribution.title }}</h3>
+        <h3 class="h6">{{ charts.weekday_bottleneck.title }}</h3>
         <div class="chart-frame">
-          <canvas id="chart-delivery-status-distribution"></canvas>
+          <canvas id="chart-weekday-bottleneck"></canvas>
         </div>
       </div>
     </div>
-    <div class="col-12">
+    <div class="col-lg-6">
       <div class="border rounded p-3 h-100 chart-panel">
-        <h3 class="h6">{{ charts.lead_time_by_driver.title }}</h3>
-        <div class="chart-frame chart-frame-wide">
-          <canvas id="chart-lead-time-by-driver"></canvas>
+        <h3 class="h6">{{ charts.delay_pareto.title }}</h3>
+        <div class="chart-frame">
+          <canvas id="chart-delay-pareto"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="border rounded p-3 h-100 chart-panel">
+        <h3 class="h6">{{ charts.lead_time_distribution.title }}</h3>
+        <div class="chart-frame">
+          <canvas id="chart-lead-time-distribution"></canvas>
         </div>
       </div>
     </div>
@@ -200,7 +249,7 @@
 </section>
 
 <section class="mt-3 border rounded p-3">
-  <h2 class="h5">Resumo por motorista</h2>
+  <h2 class="h5">Motoristas fora da curva</h2>
   <div class="table-responsive">
     <table class="table table-sm align-middle">
       <thead>
@@ -208,22 +257,32 @@
           <th>Motorista</th>
           <th>Registros</th>
           <th>Entregues</th>
-          <th>Pendentes</th>
           <th>Valor NF</th>
+          <th>LT operacional medio</th>
+          <th>P90 operacional</th>
+          <th>LT transportadora medio</th>
+          <th>Atraso operacional %</th>
+          <th>Atraso transportadora %</th>
+          <th>Score</th>
         </tr>
       </thead>
       <tbody>
-        {% for row in tables.driver_summary %}
+        {% for row in tables.driver_outliers %}
           <tr>
             <td>{{ row.driver_name }}</td>
             <td>{{ row.total_records }}</td>
             <td>{{ row.delivered_records }}</td>
-            <td>{{ row.pending_records }}</td>
             <td>R$ {{ row.total_invoice_value }}</td>
+            <td>{{ row.average_operational_lead_time_hours }}h</td>
+            <td>{{ row.operational_lead_time_p90_hours }}h</td>
+            <td>{{ row.average_carrier_lead_time_hours }}h</td>
+            <td>{{ row.operational_late_percentage }}%</td>
+            <td>{{ row.carrier_late_percentage }}%</td>
+            <td>{{ row.criticality_score }}</td>
           </tr>
         {% empty %}
           <tr>
-            <td colspan="5" class="text-muted">Sem dados para exibir.</td>
+            <td colspan="10" class="text-muted">Sem dados para exibir.</td>
           </tr>
         {% endfor %}
       </tbody>
@@ -232,30 +291,128 @@
 </section>
 
 <section class="mt-3 border rounded p-3">
-  <h2 class="h5">Resumo por pauta</h2>
+  <h2 class="h5">Rotas criticas</h2>
   <div class="table-responsive">
     <table class="table table-sm align-middle">
       <thead>
         <tr>
-          <th>Pauta</th>
+          <th>Pauta/Rota</th>
           <th>Registros</th>
           <th>Entregues</th>
-          <th>Pendentes</th>
+          <th>Atrasados</th>
+          <th>Cidades atendidas</th>
           <th>Valor NF</th>
+          <th>LT operacional medio</th>
+          <th>P90 operacional</th>
+          <th>Atraso operacional %</th>
+          <th>Atraso transportadora %</th>
+          <th>Score</th>
         </tr>
       </thead>
       <tbody>
-        {% for row in tables.route_summary %}
+        {% for row in tables.critical_routes %}
           <tr>
             <td>{{ row.route }}</td>
             <td>{{ row.total_records }}</td>
             <td>{{ row.delivered_records }}</td>
-            <td>{{ row.pending_records }}</td>
+            <td>{{ row.delayed_records }}</td>
+            <td>{{ row.served_cities }}</td>
             <td>R$ {{ row.total_invoice_value }}</td>
+            <td>{{ row.average_operational_lead_time_hours }}h</td>
+            <td>{{ row.operational_lead_time_p90_hours }}h</td>
+            <td>{{ row.operational_late_percentage }}%</td>
+            <td>{{ row.carrier_late_percentage }}%</td>
+            <td>{{ row.criticality_score }}</td>
           </tr>
         {% empty %}
           <tr>
-            <td colspan="5" class="text-muted">Sem dados para exibir.</td>
+            <td colspan="11" class="text-muted">Sem dados para exibir.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="mt-3 border rounded p-3">
+  <h2 class="h5">Cidades criticas</h2>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>Cidade</th>
+          <th>Registros</th>
+          <th>Rotas</th>
+          <th>Valor NF</th>
+          <th>LT operacional medio</th>
+          <th>LT transportadora medio</th>
+          <th>Atraso operacional %</th>
+          <th>Atraso transportadora %</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in tables.critical_cities %}
+          <tr>
+            <td>{{ row.city }}</td>
+            <td>{{ row.total_records }}</td>
+            <td>{{ row.routes }}</td>
+            <td>R$ {{ row.total_invoice_value }}</td>
+            <td>{{ row.average_operational_lead_time_hours }}h</td>
+            <td>{{ row.average_carrier_lead_time_hours }}h</td>
+            <td>{{ row.operational_late_percentage }}%</td>
+            <td>{{ row.carrier_late_percentage }}%</td>
+            <td>{{ row.criticality_score }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="9" class="text-muted">Sem dados para exibir.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="mt-3 border rounded p-3">
+  <h2 class="h5">Notas fiscais fora da curva</h2>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>NF</th>
+          <th>Serie</th>
+          <th>Motorista</th>
+          <th>Pauta/Rota</th>
+          <th>Cidade</th>
+          <th>Valor NF</th>
+          <th>Emissao</th>
+          <th>Entrega</th>
+          <th>LT operacional</th>
+          <th>LT transportadora</th>
+          <th>Status carga</th>
+          <th>Status entrega</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in tables.invoice_outliers %}
+          <tr>
+            <td>{{ row.invoice_number }}</td>
+            <td>{{ row.invoice_series }}</td>
+            <td>{{ row.driver_name }}</td>
+            <td>{{ row.route }}</td>
+            <td>{{ row.city }}</td>
+            <td>R$ {{ row.invoice_value }}</td>
+            <td>{{ row.invoice_issue_date }}</td>
+            <td>{{ row.customer_delivery_date }}</td>
+            <td>{{ row.operational_lead_time_hours }}h</td>
+            <td>{{ row.carrier_lead_time_hours }}h</td>
+            <td>{{ row.cargo_status }}</td>
+            <td>{{ row.delivery_status }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="12" class="text-muted">Sem dados para exibir.</td>
           </tr>
         {% endfor %}
       </tbody>

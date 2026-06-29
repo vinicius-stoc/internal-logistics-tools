@@ -112,12 +112,12 @@ class DashboardViewTests(TestCase):
 
         self.assertContains(response, 'id="dashboard-charts-data"')
         self.assertContains(response, 'id="chart-records-by-day"')
-        self.assertContains(response, 'id="chart-records-by-driver"')
-        self.assertContains(response, 'id="chart-records-by-route"')
-        self.assertContains(response, 'id="chart-delivery-status-distribution"')
-        self.assertContains(response, 'id="chart-lead-time-by-driver"')
-        self.assertContains(response, 'class="chart-frame"', count=4)
-        self.assertContains(response, 'class="chart-frame chart-frame-wide"')
+        self.assertContains(response, 'id="chart-driver-efficiency-scatter"')
+        self.assertContains(response, 'id="chart-critical-routes-ranking"')
+        self.assertContains(response, 'id="chart-weekday-bottleneck"')
+        self.assertContains(response, 'id="chart-delay-pareto"')
+        self.assertContains(response, 'id="chart-lead-time-distribution"')
+        self.assertContains(response, 'class="chart-frame"', count=6)
         self.assertContains(response, "dashboard_charts.js")
 
     def test_home_links_to_dashboard(self):
@@ -349,9 +349,24 @@ class DashboardAnalyticsTests(TestCase):
 
         self.assertEqual(context["cards"]["total_records"], 0)
         self.assertEqual(context["cards"]["total_invoice_value"], "0.00")
+        self.assertEqual(context["cards"]["operational_sla_rate"], "0.00")
+        self.assertEqual(context["cards"]["carrier_sla_rate"], "0.00")
+        self.assertEqual(context["cards"]["operational_lead_time_p90_hours"], "0.00")
+        self.assertEqual(context["cards"]["carrier_lead_time_p90_hours"], "0.00")
+        self.assertEqual(context["cards"]["delayed_invoice_value"], "0.00")
+        self.assertEqual(context["cards"]["top_critical_route"]["route"], "Sem dados")
         self.assertFalse(context["metadata"]["has_data"])
         self.assertIsNone(context["metadata"]["last_successful_import"])
         self.assertIn("records_by_day", context["charts"])
+        self.assertIn("driver_efficiency_scatter", context["charts"])
+        self.assertIn("critical_routes_ranking", context["charts"])
+        self.assertIn("weekday_bottleneck", context["charts"])
+        self.assertIn("delay_pareto", context["charts"])
+        self.assertIn("lead_time_distribution", context["charts"])
+        self.assertIn("driver_outliers", context["tables"])
+        self.assertIn("critical_routes", context["tables"])
+        self.assertIn("critical_cities", context["tables"])
+        self.assertIn("invoice_outliers", context["tables"])
 
         json.dumps(context)
 
@@ -395,6 +410,76 @@ class DashboardAnalyticsTests(TestCase):
         self.assertEqual(cards["carrier_late_records"], 1)
         self.assertEqual(cards["operational_late_percentage"], "50.00")
         self.assertEqual(cards["carrier_late_percentage"], "50.00")
+        self.assertEqual(cards["operational_sla_rate"], "50.00")
+        self.assertEqual(cards["carrier_sla_rate"], "50.00")
+        self.assertEqual(cards["operational_lead_time_p90_hours"], "20.00")
+        self.assertEqual(cards["carrier_lead_time_p90_hours"], "7.00")
+        self.assertEqual(cards["delayed_invoice_value"], "150.50")
+        self.assertEqual(cards["top_critical_route"]["route"], "RT030")
+        self.assertEqual(cards["top_critical_route"]["criticality_score"], "100.00")
+        self.assertEqual(cards["top_critical_route"]["total_records"], 2)
+        self.assertEqual(cards["top_critical_route"]["delayed_percentage"], "100.00")
+
+    def test_percentile_cards_handle_small_and_empty_sets(self):
+        batch = self._create_batch()
+        self._create_record(
+            batch=batch,
+            row_number=1,
+            invoice_number="1001",
+            operational_lead_time_hours=Decimal("12.00"),
+            carrier_lead_time_hours=None,
+        )
+        self._create_record(
+            batch=batch,
+            row_number=2,
+            invoice_number="1002",
+            operational_lead_time_hours=Decimal("36.00"),
+            carrier_lead_time_hours=None,
+        )
+
+        cards = get_dashboard_context(DashboardFilters())["cards"]
+
+        self.assertEqual(cards["operational_lead_time_p90_hours"], "36.00")
+        self.assertEqual(cards["carrier_lead_time_p90_hours"], "0.00")
+
+    def test_delayed_invoice_value_counts_operational_or_carrier_late_records_once(self):
+        batch = self._create_batch()
+        self._create_record(
+            batch=batch,
+            row_number=1,
+            invoice_number="1001",
+            invoice_value=Decimal("100.00"),
+            is_operational_late=True,
+            is_carrier_late=False,
+        )
+        self._create_record(
+            batch=batch,
+            row_number=2,
+            invoice_number="1002",
+            invoice_value=Decimal("75.50"),
+            is_operational_late=False,
+            is_carrier_late=True,
+        )
+        self._create_record(
+            batch=batch,
+            row_number=3,
+            invoice_number="1003",
+            invoice_value=Decimal("30.00"),
+            is_operational_late=True,
+            is_carrier_late=True,
+        )
+        self._create_record(
+            batch=batch,
+            row_number=4,
+            invoice_number="1004",
+            invoice_value=Decimal("20.00"),
+            is_operational_late=False,
+            is_carrier_late=False,
+        )
+
+        cards = get_dashboard_context(DashboardFilters())["cards"]
+
+        self.assertEqual(cards["delayed_invoice_value"], "205.50")
 
     def test_filters_are_applied_to_queryset(self):
         batch = self._create_batch()
@@ -433,8 +518,8 @@ class DashboardAnalyticsTests(TestCase):
         context = get_dashboard_context(filters)
 
         self.assertEqual(context["cards"]["total_records"], 1)
-        self.assertEqual(context["tables"]["driver_summary"][0]["driver_name"], "BEATRIZ GOMES")
-        self.assertEqual(context["tables"]["route_summary"][0]["route"], "RT030")
+        self.assertEqual(context["tables"]["driver_outliers"][0]["driver_name"], "BEATRIZ GOMES")
+        self.assertEqual(context["tables"]["critical_routes"][0]["route"], "RT030")
 
     def test_chart_contracts_have_stable_json_shape(self):
         batch = self._create_batch()
@@ -462,12 +547,44 @@ class DashboardAnalyticsTests(TestCase):
         self.assertEqual(charts["records_by_day"]["id"], "records_by_day")
         self.assertEqual(charts["records_by_day"]["type"], "bar")
         self.assertEqual(charts["records_by_day"]["data"]["labels"], ["2026-05-01", "2026-05-02"])
-        self.assertEqual(charts["records_by_driver"]["data"]["labels"], ["BEATRIZ GOMES"])
-        self.assertEqual(charts["records_by_route"]["data"]["labels"], ["RT030"])
-        self.assertEqual(charts["delivery_status_distribution"]["type"], "doughnut")
-        self.assertEqual(len(charts["lead_time_by_driver"]["data"]["datasets"]), 2)
+        self.assertEqual(charts["driver_efficiency_scatter"]["id"], "driver_efficiency_scatter")
+        self.assertEqual(charts["driver_efficiency_scatter"]["type"], "bubble")
+        self.assertEqual(charts["driver_efficiency_scatter"]["data"]["datasets"][0]["data"][0]["driver_name"], "BEATRIZ GOMES")
+        self.assertEqual(charts["critical_routes_ranking"]["id"], "critical_routes_ranking")
+        self.assertEqual(charts["critical_routes_ranking"]["options"]["indexAxis"], "y")
+        self.assertEqual(charts["weekday_bottleneck"]["id"], "weekday_bottleneck")
+        self.assertEqual(len(charts["weekday_bottleneck"]["data"]["datasets"]), 2)
+        self.assertEqual(charts["delay_pareto"]["id"], "delay_pareto")
+        self.assertEqual(charts["delay_pareto"]["data"]["datasets"][1]["type"], "line")
+        self.assertEqual(charts["lead_time_distribution"]["id"], "lead_time_distribution")
+        self.assertEqual(len(charts["lead_time_distribution"]["data"]["datasets"]), 2)
 
         json.dumps(charts)
+
+    def test_new_dashboard_tables_are_available(self):
+        batch = self._create_batch()
+        self._create_record(
+            batch=batch,
+            row_number=1,
+            invoice_number="1001",
+            driver_name="BEATRIZ GOMES",
+            route="RT030",
+            city="PONTA GROSSA",
+            invoice_value=Decimal("100.00"),
+            operational_lead_time_hours=Decimal("120.00"),
+            carrier_lead_time_hours=Decimal("72.00"),
+            is_operational_late=True,
+        )
+
+        tables = get_dashboard_context(DashboardFilters())["tables"]
+
+        self.assertEqual(tables["driver_outliers"][0]["driver_name"], "BEATRIZ GOMES")
+        self.assertEqual(tables["critical_routes"][0]["route"], "RT030")
+        self.assertEqual(tables["critical_routes"][0]["served_cities"], 1)
+        self.assertEqual(tables["critical_cities"][0]["city"], "PONTA GROSSA")
+        self.assertEqual(tables["invoice_outliers"][0]["invoice_number"], "1001")
+
+        json.dumps(tables)
 
     def test_last_successful_import_ignores_failed_batches(self):
         self._create_batch(status=ImportBatch.Status.ERROR, file_hash="error-hash")
