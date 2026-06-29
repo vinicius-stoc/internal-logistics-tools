@@ -274,6 +274,125 @@
 </section>
 
 <section class="mt-3 border rounded p-3">
+  <div class="d-flex justify-content-between gap-2">
+    <h2 class="h5">Pressao Comercial</h2>
+    <button class="dashboard-info-button" type="button" data-help-key="tables.commercial_pressure_summary" aria-label="Explicacao da analise">?</button>
+  </div>
+  <p class="text-muted small mb-3">
+    Analise da demanda criada pelo faturamento e do impacto nos prazos da logistica.
+  </p>
+  <div class="row g-3 mb-3">
+    <div class="col-md-3">
+      <div class="border rounded p-3 h-100">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">Maior dia de faturamento</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.peak_billing_day" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-5">{{ cards.peak_billing_day.date|default:"Sem dados" }}</strong>
+        <div class="small text-muted">
+          {{ cards.peak_billing_day.records }} registros | R$ {{ cards.peak_billing_day.total_invoice_value }}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="border rounded p-3 h-100">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">Faturados nos ultimos 3 dias uteis</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.last_3_business_days_records" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-4">{{ cards.last_3_business_days_records }}</strong>
+        <div class="small text-muted">{{ cards.last_3_business_days_range }}</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="border rounded p-3 h-100">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">Concentracao no fim do mes</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.last_3_business_days_percentage" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-4">{{ cards.last_3_business_days_percentage }}%</strong>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="border rounded p-3 h-100">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">Media diaria normal</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.normal_daily_average_records" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-4">{{ cards.normal_daily_average_records }}</strong>
+        <div class="small text-muted">Registros por dia fora do fechamento</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-lg-6">
+      <div class="border rounded p-3 h-100 chart-panel">
+        <div class="d-flex justify-content-between gap-2">
+          <h3 class="h6">{{ charts.billing_vs_delivery_by_day.title }}</h3>
+          <button class="dashboard-info-button" type="button" data-help-key="charts.billing_vs_delivery_by_day" aria-label="Explicacao do grafico">?</button>
+        </div>
+        <div class="chart-frame">
+          <canvas id="chart-billing-vs-delivery-by-day"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="border rounded p-3 h-100 chart-panel">
+        <div class="d-flex justify-content-between gap-2">
+          <h3 class="h6">{{ charts.delay_by_issue_day.title }}</h3>
+          <button class="dashboard-info-button" type="button" data-help-key="charts.delay_by_issue_day" aria-label="Explicacao do grafico">?</button>
+        </div>
+        <div class="chart-frame">
+          <canvas id="chart-delay-by-issue-day"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>Periodo</th>
+          <th>Dias</th>
+          <th>Registros</th>
+          <th>Participacao</th>
+          <th>Media diaria</th>
+          <th>Valor NF</th>
+          <th>Atraso operacional %</th>
+          <th>Atraso transportadora %</th>
+          <th>LT operacional medio</th>
+          <th>P90 operacional</th>
+          <th>Severidade atraso h</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in tables.commercial_pressure_summary %}
+          <tr>
+            <td>{{ row.period }}</td>
+            <td>{{ row.issue_days }}</td>
+            <td>{{ row.records }}</td>
+            <td>{{ row.records_share }}%</td>
+            <td>{{ row.daily_average_records }}</td>
+            <td>R$ {{ row.total_invoice_value }}</td>
+            <td>{{ row.operational_late_percentage }}%</td>
+            <td>{{ row.carrier_late_percentage }}%</td>
+            <td>{{ row.average_operational_lead_time_hours }}h</td>
+            <td>{{ row.operational_lead_time_p90_hours }}h</td>
+            <td>{{ row.delay_severity_hours }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="11" class="text-muted">Sem dados para exibir.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="mt-3 border rounded p-3">
   <h2 class="h5">Graficos</h2>
   <div class="row g-3">
     <div class="col-lg-6">
