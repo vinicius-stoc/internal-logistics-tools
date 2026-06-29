@@ -12,6 +12,8 @@ class DashboardFilters:
     driver_name: Optional[str] = None
     route: Optional[str] = None
     business_unit: Optional[str] = None
+    region: Optional[str] = None
+    frequency: Optional[str] = None
     delivery_status: Optional[str] = None
     cargo_status: Optional[str] = None
     errors: List[str] = field(default_factory=list)
@@ -28,6 +30,8 @@ class DashboardFilters:
             driver_name=_clean_value(querydict.get("driver_name")),
             route=_clean_value(querydict.get("route")),
             business_unit=_clean_value(querydict.get("business_unit")),
+            region=_clean_value(querydict.get("region")),
+            frequency=_clean_value(querydict.get("frequency")),
             delivery_status=_clean_value(querydict.get("delivery_status")),
             cargo_status=_clean_value(querydict.get("cargo_status")),
             errors=errors,
@@ -44,6 +48,10 @@ class DashboardFilters:
             queryset = queryset.filter(route=self.route)
         if self.business_unit:
             queryset = queryset.filter(business_unit=self.business_unit)
+        if self.region:
+            queryset = queryset.filter(region=self.region)
+        if self.frequency:
+            queryset = queryset.filter(frequency=self.frequency)
         if self.delivery_status:
             queryset = queryset.filter(delivery_status=self.delivery_status)
         if self.cargo_status:
@@ -57,6 +65,8 @@ class DashboardFilters:
             "driver_name": self.driver_name or "",
             "route": self.route or "",
             "business_unit": self.business_unit or "",
+            "region": self.region or "",
+            "frequency": self.frequency or "",
             "delivery_status": self.delivery_status or "",
             "cargo_status": self.cargo_status or "",
         }

@@ -39,6 +39,8 @@ def build_dashboard_export(filters: DashboardFilters) -> DashboardExportResult:
         _fill_data_sheet(data_sheet, queryset)
         _fill_summary_sheet(workbook, queryset, "Resumo motorista", "driver_name", "Motorista")
         _fill_summary_sheet(workbook, queryset, "Resumo pauta", "route", "Pauta")
+        _fill_summary_sheet(workbook, queryset, "Resumo regiao", "region", "Regiao")
+        _fill_summary_sheet(workbook, queryset, "Resumo frequencia", "frequency", "Frequencia")
 
         output = BytesIO()
         workbook.save(output)
@@ -59,6 +61,8 @@ def _get_filtered_queryset(filters):
         "driver_name",
         "route",
         "city",
+        "region",
+        "frequency",
         "customer_name",
         "invoice_number",
         "invoice_series",
@@ -92,6 +96,8 @@ def _fill_data_sheet(worksheet, queryset):
         ("Motorista", "driver_name", None),
         ("Pauta", "route", None),
         ("Cidade", "city", None),
+        ("Regiao", "region", None),
+        ("Frequencia", "frequency", None),
         ("Cliente", "customer_name", None),
         ("NF", "invoice_number", None),
         ("Serie", "invoice_series", None),

@@ -50,8 +50,45 @@ class LeadTimeImportTests(TestCase):
         self.assertEqual(record.invoice_number, "319554")
         self.assertEqual(record.vehicle_plate, "AZP8G94")
         self.assertEqual(record.invoice_value, Decimal("1674.40"))
+        self.assertEqual(record.region, "")
+        self.assertEqual(record.frequency, "")
         self.assertIsNotNone(record.operational_lead_time_hours)
         self.assertIsNotNone(record.carrier_lead_time_hours)
+
+    def test_valid_import_reads_optional_region_and_frequency_headers(self):
+        headers = EXPECTED_HEADERS_A_TO_AH + ["Regiao", "Frequencia"]
+        row = self._valid_row() + ["SUL", "DIARIA"]
+        file_path = self._create_workbook(headers=headers, row=row)
+
+        batch = LeadTimeImportService().import_file(file_path)
+
+        self.assertEqual(batch.status, ImportBatch.Status.SUCCESS)
+        record = LeadTimeRecord.objects.get()
+        self.assertEqual(record.region, "SUL")
+        self.assertEqual(record.frequency, "DIARIA")
+
+    def test_optional_region_and_frequency_values_are_normalized_as_text(self):
+        headers = EXPECTED_HEADERS_A_TO_AH + ["REGIAO", "FREQ"]
+        row = self._valid_row() + [123, 2]
+        file_path = self._create_workbook(headers=headers, row=row)
+
+        batch = LeadTimeImportService().import_file(file_path)
+
+        self.assertEqual(batch.status, ImportBatch.Status.SUCCESS)
+        record = LeadTimeRecord.objects.get()
+        self.assertEqual(record.region, "123")
+        self.assertEqual(record.frequency, "2")
+
+    def test_model_has_optional_region_and_frequency_fields(self):
+        region_field = LeadTimeRecord._meta.get_field("region")
+        frequency_field = LeadTimeRecord._meta.get_field("frequency")
+
+        self.assertEqual(region_field.max_length, 80)
+        self.assertTrue(region_field.blank)
+        self.assertTrue(region_field.db_index)
+        self.assertEqual(frequency_field.max_length, 80)
+        self.assertTrue(frequency_field.blank)
+        self.assertTrue(frequency_field.db_index)
 
     def test_duplicate_file_creates_duplicated_batch_without_new_records(self):
         file_path = self._create_workbook()
@@ -91,13 +128,13 @@ class LeadTimeImportTests(TestCase):
         self.assertTrue(result["is_operational_late"])
         self.assertTrue(result["is_carrier_late"])
 
-    def _create_workbook(self, headers=None):
+    def _create_workbook(self, headers=None, row=None):
         workbook = openpyxl.Workbook()
         worksheet = workbook.active
         worksheet.title = "COM 001"
         worksheet.append(headers or EXPECTED_HEADERS_A_TO_AH)
-        worksheet.append(self._valid_row())
-        worksheet.append([None] * len(EXPECTED_HEADERS_A_TO_AH))
+        worksheet.append(row or self._valid_row())
+        worksheet.append([None] * len(headers or EXPECTED_HEADERS_A_TO_AH))
 
         temporary_file = NamedTemporaryFile(
             suffix="Acompanhamento Lead Time - Tabaco mes de Maio 2026.xlsx",

@@ -87,6 +87,8 @@ class LeadTimeRecord(models.Model):
     customer_code = models.CharField(max_length=30)
     customer_name = models.CharField(max_length=255)
     city = models.CharField(max_length=120, db_index=True)
+    region = models.CharField(max_length=80, blank=True, db_index=True)
+    frequency = models.CharField(max_length=80, blank=True, db_index=True)
     invoice_value = models.DecimalField(max_digits=14, decimal_places=2)
     invoice_status = models.CharField(max_length=50)
     cargo_status = models.CharField(max_length=50, db_index=True)
@@ -128,6 +130,8 @@ class LeadTimeRecord(models.Model):
             models.Index(fields=["customer_delivery_date", "driver_name"], name="imp_rec_delivery_driver_idx"),
             models.Index(fields=["invoice_number", "invoice_series"], name="imports_record_invoice_idx"),
             models.Index(fields=["business_unit", "invoice_issue_date"], name="imports_record_unit_issue_idx"),
+            models.Index(fields=["region"], name="imports_record_region_idx"),
+            models.Index(fields=["frequency"], name="imports_record_freq_idx"),
         ]
         constraints = [
             models.UniqueConstraint(

@@ -125,7 +125,7 @@ class LeadTimeImportService:
             "business_unit": business_unit,
             "invalid_rows_sample": invalid_rows[:20],
             "invalid_rows_sample_limited": len(invalid_rows) > 20,
-            "import_rule": "COM 001 A:AH, descartando a segunda coluna Placa.",
+            "import_rule": "COM 001 A:AH, descartando a segunda coluna Placa; region/frequency opcionais por cabecalho.",
         }
         batch.save(
             update_fields=[

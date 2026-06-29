@@ -28,6 +28,8 @@ class LeadTimeRecordAdmin(admin.ModelAdmin):
         "business_unit",
         "driver_name",
         "city",
+        "region",
+        "frequency",
         "invoice_issue_date",
         "customer_delivery_date",
         "delivery_status",
@@ -36,6 +38,8 @@ class LeadTimeRecordAdmin(admin.ModelAdmin):
     )
     list_filter = (
         "business_unit",
+        "region",
+        "frequency",
         "delivery_status",
         "cargo_status",
         "is_operational_late",
@@ -48,6 +52,8 @@ class LeadTimeRecordAdmin(admin.ModelAdmin):
         "driver_name",
         "customer_name",
         "city",
+        "region",
+        "frequency",
         "vehicle_plate",
     )
     readonly_fields = ("created_at", "updated_at")
