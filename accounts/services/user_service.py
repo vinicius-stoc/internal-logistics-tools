@@ -59,7 +59,7 @@ def toggle_user_active(user, actor):
     ensure_can_manage_target(user, actor)
 
     if user == actor and user.is_active:
-        raise PermissionDenied("Voce nao pode desativar o proprio usuario.")
+        raise PermissionDenied("Você não pode desativar o próprio usuário.")
 
     user.is_active = not user.is_active
     user.save(update_fields=["is_active"])
@@ -101,4 +101,4 @@ def ensure_internal_profiles():
 
 def ensure_can_manage_target(user, actor):
     if user.is_superuser and not actor.is_superuser:
-        raise PermissionDenied("Usuarios tecnicos nao podem ser alterados por usuario operacional.")
+        raise PermissionDenied("Usuários técnicos não podem ser alterados por usuário operacional.")

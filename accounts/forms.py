@@ -27,19 +27,19 @@ class BootstrapFormMixin:
 
 
 class InternalUserCreateForm(BootstrapFormMixin, forms.Form):
-    username = forms.CharField(label="Usuario", max_length=150)
+    username = forms.CharField(label="Usuário", max_length=150)
     first_name = forms.CharField(label="Nome", max_length=150, required=False)
     last_name = forms.CharField(label="Sobrenome", max_length=150, required=False)
     email = forms.EmailField(label="E-mail", required=False)
-    password1 = forms.CharField(label="Senha temporaria", widget=forms.PasswordInput)
-    password2 = forms.CharField(label="Confirmar senha temporaria", widget=forms.PasswordInput)
+    password1 = forms.CharField(label="Senha temporária", widget=forms.PasswordInput)
+    password2 = forms.CharField(label="Confirmar senha temporária", widget=forms.PasswordInput)
     groups = forms.ModelMultipleChoiceField(
         label="Grupos",
         queryset=Group.objects.none(),
         required=False,
         widget=forms.CheckboxSelectMultiple,
     )
-    is_active = forms.BooleanField(label="Usuario ativo", required=False, initial=True)
+    is_active = forms.BooleanField(label="Usuário ativo", required=False, initial=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -49,7 +49,7 @@ class InternalUserCreateForm(BootstrapFormMixin, forms.Form):
     def clean_username(self):
         username = self.cleaned_data["username"].strip()
         if User.objects.filter(username__iexact=username).exists():
-            raise ValidationError("Ja existe um usuario com este login.")
+            raise ValidationError("Já existe um usuário com este login.")
         return username
 
     def clean(self):
@@ -58,7 +58,7 @@ class InternalUserCreateForm(BootstrapFormMixin, forms.Form):
         password2 = cleaned_data.get("password2")
 
         if password1 and password2 and password1 != password2:
-            self.add_error("password2", "As senhas nao conferem.")
+            self.add_error("password2", "As senhas não conferem.")
 
         if password1:
             try:
@@ -84,7 +84,7 @@ class InternalUserEditForm(BootstrapFormMixin, forms.ModelForm):
             "first_name": "Nome",
             "last_name": "Sobrenome",
             "email": "E-mail",
-            "is_active": "Usuario ativo",
+            "is_active": "Usuário ativo",
         }
 
     def __init__(self, *args, **kwargs):
@@ -97,8 +97,8 @@ class InternalUserEditForm(BootstrapFormMixin, forms.ModelForm):
 
 
 class InternalPasswordResetForm(BootstrapFormMixin, forms.Form):
-    password1 = forms.CharField(label="Senha temporaria", widget=forms.PasswordInput)
-    password2 = forms.CharField(label="Confirmar senha temporaria", widget=forms.PasswordInput)
+    password1 = forms.CharField(label="Senha temporária", widget=forms.PasswordInput)
+    password2 = forms.CharField(label="Confirmar senha temporária", widget=forms.PasswordInput)
 
     def __init__(self, user, *args, **kwargs):
         self.user = user
@@ -111,7 +111,7 @@ class InternalPasswordResetForm(BootstrapFormMixin, forms.Form):
         password2 = cleaned_data.get("password2")
 
         if password1 and password2 and password1 != password2:
-            self.add_error("password2", "As senhas nao conferem.")
+            self.add_error("password2", "As senhas não conferem.")
 
         if password1:
             try:

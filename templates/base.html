@@ -26,7 +26,7 @@
           </li>
           {% if request.user.is_superuser or perms.accounts.manage_internal_users %}
             <li class="nav-item">
-              <a class="nav-link {% if request.resolver_match.app_name == 'accounts' and 'users' in request.path %}active{% endif %}" href="{% url 'accounts:user_list' %}">Usuarios</a>
+              <a class="nav-link {% if request.resolver_match.app_name == 'accounts' and 'users' in request.path %}active{% endif %}" href="{% url 'accounts:user_list' %}">Usuários</a>
             </li>
           {% endif %}
         </ul>

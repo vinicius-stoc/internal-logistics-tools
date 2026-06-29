@@ -39,7 +39,7 @@ def user_create(request):
         form = InternalUserCreateForm(request.POST)
         if form.is_valid():
             user = create_internal_user(form.cleaned_data)
-            messages.success(request, f"Usuario {user.username} criado.")
+            messages.success(request, f"Usuário {user.username} criado.")
             return redirect("accounts:user_list")
     else:
         form = InternalUserCreateForm()
@@ -49,8 +49,8 @@ def user_create(request):
         "accounts/user_form.html",
         {
             "form": form,
-            "title": "Novo usuario",
-            "submit_label": "Criar usuario",
+            "title": "Criar usuário",
+            "submit_label": "Criar usuário",
         },
     )
 
@@ -65,7 +65,7 @@ def user_edit(request, user_id):
         form = InternalUserEditForm(request.POST, instance=user)
         if form.is_valid():
             update_internal_user(user, form.cleaned_data, request.user)
-            messages.success(request, f"Usuario {user.username} atualizado.")
+            messages.success(request, f"Usuário {user.username} atualizado.")
             return redirect("accounts:user_list")
     else:
         form = InternalUserEditForm(instance=user)
@@ -75,8 +75,8 @@ def user_edit(request, user_id):
         "accounts/user_form.html",
         {
             "form": form,
-            "title": f"Editar usuario: {user.username}",
-            "submit_label": "Salvar alteracoes",
+            "title": f"Editar usuário: {user.username}",
+            "submit_label": "Salvar alterações",
             "target_user": user,
         },
     )
@@ -91,7 +91,7 @@ def user_toggle_active(request, user_id):
     if request.method == "POST":
         toggle_user_active(user, request.user)
         status = "ativado" if user.is_active else "desativado"
-        messages.success(request, f"Usuario {user.username} {status}.")
+        messages.success(request, f"Usuário {user.username} {status}.")
         return redirect("accounts:user_list")
 
     return render(
@@ -116,7 +116,7 @@ def user_reset_password(request, user_id):
             reset_internal_user_password(user, form.cleaned_data["password1"], request.user)
             messages.success(
                 request,
-                f"Senha temporaria definida para {user.username}. O usuario devera trocar no proximo login.",
+                f"Senha temporária definida para {user.username}. O usuário deverá trocar no próximo login.",
             )
             return redirect("accounts:user_list")
     else:

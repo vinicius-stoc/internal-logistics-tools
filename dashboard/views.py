@@ -31,7 +31,7 @@ def export_dashboard_excel(request):
     except DashboardExportError:
         messages.error(
             request,
-            "Nao foi possivel gerar a exportacao Excel. Tente novamente ou ajuste os filtros.",
+            "Não foi possível gerar a exportação Excel. Tente novamente ou ajuste os filtros.",
         )
         return redirect(_dashboard_url_with_querystring(request))
 

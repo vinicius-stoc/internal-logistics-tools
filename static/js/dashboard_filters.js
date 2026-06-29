@@ -43,10 +43,10 @@
         placeholder: placeholder,
         plugins: {
           remove_button: {
-            title: "Remover selecao",
+            title: "Remover seleção",
           },
           clear_button: {
-            title: "Limpar selecao",
+            title: "Limpar seleção",
           },
         },
         render: {

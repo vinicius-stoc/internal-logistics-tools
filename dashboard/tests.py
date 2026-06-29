@@ -109,7 +109,7 @@ class DashboardViewTests(TestCase):
 
         response = self.client.get(reverse("dashboard:home"))
 
-        self.assertContains(response, "Nenhum dado encontrado")
+        self.assertContains(response, "Nenhum registro encontrado")
         self.assertFalse(response.context["metadata"]["has_data"])
 
     def test_dashboard_renders_chart_json_and_canvas_ids(self):
@@ -134,7 +134,7 @@ class DashboardViewTests(TestCase):
         self.assertContains(response, 'id="dashboard-explanations-data"')
         self.assertContains(response, 'data-help-key="cards.operational_sla_rate"')
         self.assertContains(response, 'data-help-key="charts.region_lead_time_comparison"')
-        self.assertContains(response, "Pressao Comercial")
+        self.assertContains(response, "Pressão comercial")
         self.assertContains(response, 'data-help-key="charts.billing_vs_delivery_by_day"')
         self.assertContains(response, "dashboard_filters.js")
 
@@ -227,9 +227,9 @@ class DashboardExportTests(TestCase):
         self.assertIn("Dados filtrados", workbook.sheetnames)
         worksheet = workbook["Dados filtrados"]
         self.assertEqual(worksheet.max_row, 1)
-        self.assertEqual(worksheet["A1"].value, "Unidade de negocio")
-        self.assertEqual(worksheet["G1"].value, "Regiao")
-        self.assertEqual(worksheet["H1"].value, "Frequencia")
+        self.assertEqual(worksheet["A1"].value, "Unidade de negócio")
+        self.assertEqual(worksheet["G1"].value, "Região")
+        self.assertEqual(worksheet["H1"].value, "Frequência")
 
     def test_export_with_filters_returns_only_filtered_records(self):
         batch = self._create_batch()
@@ -820,9 +820,9 @@ class DashboardAnalyticsTests(TestCase):
             context["charts"]["billing_vs_delivery_by_day"]["data"]["datasets"][1]["data"],
             [0, 1, 2],
         )
-        self.assertEqual(context["tables"]["commercial_pressure_summary"][0]["period"], "Periodo normal")
+        self.assertEqual(context["tables"]["commercial_pressure_summary"][0]["period"], "Período normal")
         self.assertEqual(context["tables"]["commercial_pressure_summary"][0]["records"], 1)
-        self.assertEqual(context["tables"]["commercial_pressure_summary"][1]["period"], "Ultimos 3 dias uteis")
+        self.assertEqual(context["tables"]["commercial_pressure_summary"][1]["period"], "Últimos 3 dias úteis")
         self.assertEqual(context["tables"]["commercial_pressure_summary"][1]["records"], 2)
         self.assertEqual(
             context["tables"]["commercial_pressure_summary"][1]["operational_late_percentage"],

@@ -156,6 +156,14 @@ form input[type="email"] {
   margin-bottom: 0;
 }
 
+.dashboard-kpi-money {
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
 .dashboard-kpi-card:hover,
 .dashboard-panel:hover,
 .dashboard-table-block:hover {

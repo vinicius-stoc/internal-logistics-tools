@@ -52,14 +52,14 @@ def get_dashboard_context(filters: Optional[DashboardFilters] = None, querydict=
     region_rows = _get_group_criticality_rows(
         filtered_queryset,
         group_field="region",
-        empty_label="Sem regiao",
+        empty_label="Sem região",
         totals=criticality_totals,
         include_empty_groups=False,
     )
     frequency_rows = _get_group_criticality_rows(
         filtered_queryset,
         group_field="frequency",
-        empty_label="Sem frequencia",
+        empty_label="Sem frequência",
         totals=criticality_totals,
         include_empty_groups=False,
     )
@@ -95,13 +95,13 @@ def get_dashboard_context(filters: Optional[DashboardFilters] = None, querydict=
             "region_lead_time_comparison": _get_dimension_lead_time_comparison_chart(
                 region_rows,
                 chart_id="region_lead_time_comparison",
-                title="Lead time por regiao",
+                title="Lead time por região",
                 metadata_key="region",
             ),
             "frequency_lead_time_comparison": _get_dimension_lead_time_comparison_chart(
                 frequency_rows,
                 chart_id="frequency_lead_time_comparison",
-                title="Lead time por frequencia",
+                title="Lead time por frequência",
                 metadata_key="frequency",
             ),
             "billing_vs_delivery_by_day": commercial_pressure["charts"][
@@ -373,13 +373,13 @@ def _get_commercial_pressure(queryset):
         "tables": {
             "commercial_pressure_summary": [
                 _build_commercial_pressure_row(
-                    "Periodo normal",
+                    "Período normal",
                     normal_rows,
                     total_records,
                     issue_day_count=_count_issue_days(issue_rows_by_day, last_3_business_days, normal_only=True),
                 ),
                 _build_commercial_pressure_row(
-                    "Ultimos 3 dias uteis",
+                    "Últimos 3 dias úteis",
                     last_3_rows,
                     total_records,
                     issue_day_count=len(last_3_business_days),
@@ -619,7 +619,7 @@ def _get_driver_efficiency_scatter_chart(driver_rows):
 
     return make_chart_contract(
         chart_id="driver_efficiency_scatter",
-        title="Eficiencia por motorista: volume x lead time",
+        title="Eficiência por motorista: volume x lead time",
         chart_type="bubble",
         labels=[row["label"] for row in rows],
         datasets=[
@@ -640,7 +640,7 @@ def _get_driver_efficiency_scatter_chart(driver_rows):
                 "y": {
                     "title": {
                         "display": True,
-                        "text": "Lead time operacional medio (h)",
+                        "text": "Lead time operacional médio (h)",
                     },
                     "beginAtZero": True,
                 },
@@ -656,7 +656,7 @@ def _get_critical_routes_ranking_chart(route_rows):
 
     return make_single_dataset_chart(
         chart_id="critical_routes_ranking",
-        title="Rotas criticas",
+        title="Rotas críticas",
         chart_type="bar",
         labels=[row["label"] for row in rows],
         label="Score",
@@ -852,17 +852,17 @@ def _get_lead_time_distribution_chart(queryset):
         carrier_bucket = _get_lead_time_bucket(carrier_hours)
         if operational_bucket:
             operational_buckets[operational_bucket] += 1
-            has_invalid = has_invalid or operational_bucket == "Invalido"
+            has_invalid = has_invalid or operational_bucket == "Inválido"
         if carrier_bucket:
             carrier_buckets[carrier_bucket] += 1
-            has_invalid = has_invalid or carrier_bucket == "Invalido"
+            has_invalid = has_invalid or carrier_bucket == "Inválido"
 
     if has_invalid:
-        bucket_labels = ["Invalido"] + bucket_labels
+        bucket_labels = ["Inválido"] + bucket_labels
 
     return make_chart_contract(
         chart_id="lead_time_distribution",
-        title="Distribuicao de lead time",
+        title="Distribuição de lead time",
         chart_type="bar",
         labels=bucket_labels,
         datasets=[
@@ -888,14 +888,14 @@ def _get_dimension_lead_time_comparison_chart(rows, chart_id, title, metadata_ke
         labels=[row["label"] for row in chart_rows],
         datasets=[
             {
-                "label": "LT operacional medio",
+                "label": "LT operacional médio",
                 "data": [
                     _to_float(row["average_operational_lead_time_hours_raw"])
                     for row in chart_rows
                 ],
             },
             {
-                "label": "LT transportadora medio",
+                "label": "LT transportadora médio",
                 "data": [
                     _to_float(row["average_carrier_lead_time_hours_raw"])
                     for row in chart_rows
@@ -1332,7 +1332,7 @@ def _get_lead_time_bucket(value):
 
     value = Decimal(value)
     if value < 0:
-        return "Invalido"
+        return "Inválido"
     if value <= 24:
         return "0-24h"
     if value <= 48:
