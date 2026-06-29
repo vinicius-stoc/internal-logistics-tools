@@ -16,7 +16,7 @@ from .services.export_service import DashboardExportError, build_dashboard_expor
 @permission_required("accounts.access_dashboard", raise_exception=True)
 def dashboard_home(request):
     filters = DashboardFilters.from_querydict(request.GET)
-    context = get_dashboard_context(filters)
+    context = get_dashboard_context(filters, request.GET)
     return render(request, "dashboard/home.html", context)
 
 

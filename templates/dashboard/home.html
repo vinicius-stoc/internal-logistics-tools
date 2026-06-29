@@ -3,13 +3,26 @@
 
 {% block title %}Dashboard | Logistica Interna{% endblock %}
 
+{% block styles %}
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
-<div class="page-heading">
-  <h1>Dashboard</h1>
-  <p>Indicadores gerenciais calculados a partir dos dados importados no banco.</p>
+<div class="page-heading dashboard-heading">
+  <div>
+    <h1>Dashboard</h1>
+    <p>Indicadores gerenciais calculados a partir dos dados importados no banco.</p>
+  </div>
+  <div class="dashboard-import-status text-muted">
+    {% if metadata.last_successful_import %}
+      Ultima importacao valida: {{ metadata.last_successful_import.file_name }}
+    {% else %}
+      Nenhuma importacao valida encontrada.
+    {% endif %}
+  </div>
 </div>
 
-<form class="border rounded p-3 mb-3" method="get">
+<form class="border rounded p-3 mb-3 dashboard-filter-panel" method="get" data-auto-submit-filters="true">
   <div class="row g-3">
     <div class="col-md-3">
       <label class="form-label" for="date_start">Data inicial</label>
@@ -21,72 +34,64 @@
     </div>
     <div class="col-md-3">
       <label class="form-label" for="driver_name">Motorista</label>
-      <select class="form-select" id="driver_name" name="driver_name">
-        <option value="">Todos</option>
+      <select class="form-select" id="driver_name" name="driver_name" multiple data-searchable-filter="true" data-placeholder="Buscar motoristas">
         {% for driver in filter_options.drivers %}
-          <option value="{{ driver }}" {% if filters.driver_name == driver %}selected{% endif %}>{{ driver }}</option>
+          <option value="{{ driver }}" {% if driver in filters.driver_name %}selected{% endif %}>{{ driver }}</option>
         {% endfor %}
       </select>
     </div>
     <div class="col-md-3">
       <label class="form-label" for="route">Pauta</label>
-      <select class="form-select" id="route" name="route">
-        <option value="">Todas</option>
+      <select class="form-select" id="route" name="route" multiple data-searchable-filter="true" data-placeholder="Buscar pautas">
         {% for route in filter_options.routes %}
-          <option value="{{ route }}" {% if filters.route == route %}selected{% endif %}>{{ route }}</option>
+          <option value="{{ route }}" {% if route in filters.route %}selected{% endif %}>{{ route }}</option>
         {% endfor %}
       </select>
     </div>
     <div class="col-md-3">
       <label class="form-label" for="business_unit">Unidade de negocio</label>
-      <select class="form-select" id="business_unit" name="business_unit">
-        <option value="">Todas</option>
+      <select class="form-select" id="business_unit" name="business_unit" multiple data-searchable-filter="true" data-placeholder="Buscar unidades">
         {% for business_unit in filter_options.business_units %}
-          <option value="{{ business_unit }}" {% if filters.business_unit == business_unit %}selected{% endif %}>{{ business_unit }}</option>
+          <option value="{{ business_unit }}" {% if business_unit in filters.business_unit %}selected{% endif %}>{{ business_unit }}</option>
         {% endfor %}
       </select>
     </div>
     <div class="col-md-3">
       <label class="form-label" for="region">Regiao</label>
-      <select class="form-select" id="region" name="region">
-        <option value="">Todas</option>
+      <select class="form-select" id="region" name="region" multiple data-searchable-filter="true" data-placeholder="Buscar regioes">
         {% for region in filter_options.regions %}
-          <option value="{{ region }}" {% if filters.region == region %}selected{% endif %}>{{ region }}</option>
+          <option value="{{ region }}" {% if region in filters.region %}selected{% endif %}>{{ region }}</option>
         {% endfor %}
       </select>
     </div>
     <div class="col-md-3">
       <label class="form-label" for="frequency">Frequencia</label>
-      <select class="form-select" id="frequency" name="frequency">
-        <option value="">Todas</option>
+      <select class="form-select" id="frequency" name="frequency" multiple data-searchable-filter="true" data-placeholder="Buscar frequencias">
         {% for frequency in filter_options.frequencies %}
-          <option value="{{ frequency }}" {% if filters.frequency == frequency %}selected{% endif %}>{{ frequency }}</option>
+          <option value="{{ frequency }}" {% if frequency in filters.frequency %}selected{% endif %}>{{ frequency }}</option>
         {% endfor %}
       </select>
     </div>
     <div class="col-md-3">
       <label class="form-label" for="delivery_status">Status de entrega</label>
-      <select class="form-select" id="delivery_status" name="delivery_status">
-        <option value="">Todos</option>
+      <select class="form-select" id="delivery_status" name="delivery_status" multiple data-searchable-filter="true" data-placeholder="Buscar status">
         {% for delivery_status in filter_options.delivery_statuses %}
-          <option value="{{ delivery_status }}" {% if filters.delivery_status == delivery_status %}selected{% endif %}>{{ delivery_status }}</option>
+          <option value="{{ delivery_status }}" {% if delivery_status in filters.delivery_status %}selected{% endif %}>{{ delivery_status }}</option>
         {% endfor %}
       </select>
     </div>
     <div class="col-md-3">
       <label class="form-label" for="cargo_status">Status da carga</label>
-      <select class="form-select" id="cargo_status" name="cargo_status">
-        <option value="">Todos</option>
+      <select class="form-select" id="cargo_status" name="cargo_status" multiple data-searchable-filter="true" data-placeholder="Buscar status">
         {% for cargo_status in filter_options.cargo_statuses %}
-          <option value="{{ cargo_status }}" {% if filters.cargo_status == cargo_status %}selected{% endif %}>{{ cargo_status }}</option>
+          <option value="{{ cargo_status }}" {% if cargo_status in filters.cargo_status %}selected{% endif %}>{{ cargo_status }}</option>
         {% endfor %}
       </select>
     </div>
   </div>
 
   <div class="mt-3 d-flex flex-wrap gap-2">
-    <button class="btn btn-primary" type="submit" data-loading-text="Filtrando...">Filtrar</button>
-    <a class="btn btn-outline-secondary" href="{% url 'dashboard:home' %}">Limpar filtros</a>
+    <a class="btn btn-outline-secondary" href="{% url 'dashboard:home' %}" data-clear-filters="true">Limpar filtros</a>
     {% if request.user.is_superuser or perms.accounts.export_dashboard %}
       <a
         class="btn btn-success"
@@ -105,14 +110,6 @@
   </div>
 {% endif %}
 
-{% if metadata.last_successful_import %}
-  <p class="text-muted">
-    Ultima importacao valida: {{ metadata.last_successful_import.file_name }}
-  </p>
-{% else %}
-  <p class="text-muted">Nenhuma importacao valida encontrada.</p>
-{% endif %}
-
 {% if not metadata.has_data %}
   <div class="alert alert-info">
     A exportacao Excel ainda pode ser gerada com os cabecalhos para conferencia dos filtros.
@@ -120,170 +117,86 @@
   </div>
 {% endif %}
 
-<section class="row g-3">
-  <div class="col-md-3">
-    <div class="border rounded p-3 h-100">
-      <div class="d-flex justify-content-between gap-2">
-        <span class="text-muted">Registros</span>
-        <button class="dashboard-info-button" type="button" data-help-key="cards.total_records" aria-label="Explicacao do indicador">?</button>
-      </div>
-      <strong class="d-block fs-4">{{ cards.total_records }}</strong>
+<section class="dashboard-section" aria-labelledby="executive-summary-title">
+  <div class="dashboard-section-heading">
+    <div>
+      <h2 id="executive-summary-title" class="h5">Resumo executivo</h2>
+      <p>Visao geral do volume, finalizacao, valor e principal gargalo operacional.</p>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="border rounded p-3 h-100">
-      <div class="d-flex justify-content-between gap-2">
-        <span class="text-muted">Entregues</span>
-        <button class="dashboard-info-button" type="button" data-help-key="cards.delivered_records" aria-label="Explicacao do indicador">?</button>
-      </div>
-      <strong class="d-block fs-4">{{ cards.delivered_records }}</strong>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="border rounded p-3 h-100">
-      <div class="d-flex justify-content-between gap-2">
-        <span class="text-muted">Valor total NF</span>
-        <button class="dashboard-info-button" type="button" data-help-key="cards.total_invoice_value" aria-label="Explicacao do indicador">?</button>
-      </div>
-      <strong class="d-block fs-4">R$ {{ cards.total_invoice_value }}</strong>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="border rounded p-3 h-100">
-      <div class="d-flex justify-content-between gap-2">
-        <span class="text-muted">Valor NF em atraso</span>
-        <button class="dashboard-info-button" type="button" data-help-key="cards.delayed_invoice_value" aria-label="Explicacao do indicador">?</button>
-      </div>
-      <strong class="d-block fs-4">R$ {{ cards.delayed_invoice_value }}</strong>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="border rounded p-3 h-100">
-      <div class="d-flex justify-content-between gap-2">
-        <span class="text-muted">SLA operacional (&lt;= {{ cards.operational_target_hours }}h uteis)</span>
-        <button class="dashboard-info-button" type="button" data-help-key="cards.operational_sla_rate" aria-label="Explicacao do indicador">?</button>
-      </div>
-      <strong class="d-block fs-4">{{ cards.operational_sla_rate }}%</strong>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="border rounded p-3 h-100">
-      <div class="d-flex justify-content-between gap-2">
-        <span class="text-muted">SLA transportadora (&lt;= {{ cards.carrier_target_hours }}h uteis)</span>
-        <button class="dashboard-info-button" type="button" data-help-key="cards.carrier_sla_rate" aria-label="Explicacao do indicador">?</button>
-      </div>
-      <strong class="d-block fs-4">{{ cards.carrier_sla_rate }}%</strong>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="border rounded p-3 h-100">
-      <div class="d-flex justify-content-between gap-2">
-        <span class="text-muted">P90 operacional</span>
-        <button class="dashboard-info-button" type="button" data-help-key="cards.operational_lead_time_p90_hours" aria-label="Explicacao do indicador">?</button>
-      </div>
-      <strong class="d-block fs-4">{{ cards.operational_lead_time_p90_hours }}h</strong>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="border rounded p-3 h-100">
-      <div class="d-flex justify-content-between gap-2">
-        <span class="text-muted">P90 transportadora</span>
-        <button class="dashboard-info-button" type="button" data-help-key="cards.carrier_lead_time_p90_hours" aria-label="Explicacao do indicador">?</button>
-      </div>
-      <strong class="d-block fs-4">{{ cards.carrier_lead_time_p90_hours }}h</strong>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="border rounded p-3 h-100">
-      <div class="d-flex justify-content-between gap-2">
-        <span class="text-muted">Lead time operacional medio</span>
-        <button class="dashboard-info-button" type="button" data-help-key="cards.average_operational_lead_time_hours" aria-label="Explicacao do indicador">?</button>
-      </div>
-      <strong class="d-block fs-4">{{ cards.average_operational_lead_time_hours }}h</strong>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="border rounded p-3 h-100">
-      <div class="d-flex justify-content-between gap-2">
-        <span class="text-muted">Lead time transportadora medio</span>
-        <button class="dashboard-info-button" type="button" data-help-key="cards.average_carrier_lead_time_hours" aria-label="Explicacao do indicador">?</button>
-      </div>
-      <strong class="d-block fs-4">{{ cards.average_carrier_lead_time_hours }}h</strong>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="border rounded p-3 h-100">
-      <div class="d-flex justify-content-between gap-2">
-        <span class="text-muted">Atraso operacional (&gt; {{ cards.operational_target_hours }}h uteis)</span>
-        <button class="dashboard-info-button" type="button" data-help-key="cards.operational_late_percentage" aria-label="Explicacao do indicador">?</button>
-      </div>
-      <strong class="d-block fs-4">{{ cards.operational_late_percentage }}%</strong>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="border rounded p-3 h-100">
-      <div class="d-flex justify-content-between gap-2">
-        <span class="text-muted">Atraso transportadora (&gt; {{ cards.carrier_target_hours }}h uteis)</span>
-        <button class="dashboard-info-button" type="button" data-help-key="cards.carrier_late_percentage" aria-label="Explicacao do indicador">?</button>
-      </div>
-      <strong class="d-block fs-4">{{ cards.carrier_late_percentage }}%</strong>
-    </div>
-  </div>
-  <div class="col-md-6">
-    <div class="border rounded p-3 h-100">
-      <div class="d-flex justify-content-between gap-2">
-        <span class="text-muted">Ponto critico</span>
-        <button class="dashboard-info-button" type="button" data-help-key="cards.top_critical_route" aria-label="Explicacao do indicador">?</button>
-      </div>
-      <strong class="d-block fs-5">{{ cards.top_critical_route.route }}</strong>
-      <div class="small text-muted">
-        Score {{ cards.top_critical_route.criticality_score }} |
-        {{ cards.top_critical_route.total_records }} registros |
-        {{ cards.top_critical_route.delayed_percentage }}% atraso |
-        {{ cards.top_critical_route.delay_severity_hours }}h severidade
+  <div class="row g-3">
+    <div class="col-md-4 col-xl-2">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">Registros</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.total_records" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-4">{{ cards.total_records }}</strong>
       </div>
     </div>
-  </div>
-  <div class="col-md-3">
-    <div class="border rounded p-3 h-100">
-      <div class="d-flex justify-content-between gap-2">
-        <span class="text-muted">Pendentes</span>
-        <button class="dashboard-info-button" type="button" data-help-key="cards.pending_records" aria-label="Explicacao do indicador">?</button>
+    <div class="col-md-4 col-xl-2">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">Entregues</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.delivered_records" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-4">{{ cards.delivered_records }}</strong>
       </div>
-      <strong class="d-block fs-4">{{ cards.pending_records }}</strong>
     </div>
-  </div>
-  <div class="col-md-3">
-    <div class="border rounded p-3 h-100">
-      <div class="d-flex justify-content-between gap-2">
-        <span class="text-muted">Divergencias de status</span>
-        <button class="dashboard-info-button" type="button" data-help-key="cards.status_inconsistency_count" aria-label="Explicacao do indicador">?</button>
+    <div class="col-md-4 col-xl-2">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">Pendentes</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.pending_records" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-4">{{ cards.pending_records }}</strong>
       </div>
-      <strong class="d-block fs-4">{{ cards.status_inconsistency_count }}</strong>
     </div>
-  </div>
-  <div class="col-md-3">
-    <div class="border rounded p-3 h-100">
-      <div class="d-flex justify-content-between gap-2">
-        <span class="text-muted">Divergencia de status %</span>
-        <button class="dashboard-info-button" type="button" data-help-key="cards.status_inconsistency_percentage" aria-label="Explicacao do indicador">?</button>
+    <div class="col-md-4 col-xl-2">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">Valor total NF</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.total_invoice_value" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-4">R$ {{ cards.total_invoice_value }}</strong>
       </div>
-      <strong class="d-block fs-4">{{ cards.status_inconsistency_percentage }}%</strong>
+    </div>
+    <div class="col-md-4 col-xl-2">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">Valor NF em atraso</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.delayed_invoice_value" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-4">R$ {{ cards.delayed_invoice_value }}</strong>
+      </div>
+    </div>
+    <div class="col-md-8 col-xl-2">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">Ponto critico</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.top_critical_route" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-5">{{ cards.top_critical_route.route }}</strong>
+        <div class="small text-muted">
+          Score {{ cards.top_critical_route.criticality_score }} |
+          {{ cards.top_critical_route.total_records }} registros
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
-<section class="mt-3 border rounded p-3">
-  <div class="d-flex justify-content-between gap-2">
-    <h2 class="h5">Pressao Comercial</h2>
-    <button class="dashboard-info-button" type="button" data-help-key="tables.commercial_pressure_summary" aria-label="Explicacao da analise">?</button>
+<section class="dashboard-section" aria-labelledby="billing-section-title">
+  <div class="dashboard-section-heading">
+    <div>
+      <h2 id="billing-section-title" class="h5">1. Emissao</h2>
+      <p>Entrada de demanda gerada pelo faturamento.</p>
+    </div>
   </div>
-  <p class="text-muted small mb-3">
-    Analise da demanda criada pelo faturamento e do impacto nos prazos da logistica.
-  </p>
+
   <div class="row g-3 mb-3">
     <div class="col-md-3">
-      <div class="border rounded p-3 h-100">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
         <div class="d-flex justify-content-between gap-2">
           <span class="text-muted">Maior dia de faturamento</span>
           <button class="dashboard-info-button" type="button" data-help-key="cards.peak_billing_day" aria-label="Explicacao do indicador">?</button>
@@ -295,7 +208,7 @@
       </div>
     </div>
     <div class="col-md-3">
-      <div class="border rounded p-3 h-100">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
         <div class="d-flex justify-content-between gap-2">
           <span class="text-muted">Faturados nos ultimos 3 dias uteis</span>
           <button class="dashboard-info-button" type="button" data-help-key="cards.last_3_business_days_records" aria-label="Explicacao do indicador">?</button>
@@ -305,7 +218,7 @@
       </div>
     </div>
     <div class="col-md-3">
-      <div class="border rounded p-3 h-100">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
         <div class="d-flex justify-content-between gap-2">
           <span class="text-muted">Concentracao no fim do mes</span>
           <button class="dashboard-info-button" type="button" data-help-key="cards.last_3_business_days_percentage" aria-label="Explicacao do indicador">?</button>
@@ -314,7 +227,7 @@
       </div>
     </div>
     <div class="col-md-3">
-      <div class="border rounded p-3 h-100">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
         <div class="d-flex justify-content-between gap-2">
           <span class="text-muted">Media diaria normal</span>
           <button class="dashboard-info-button" type="button" data-help-key="cards.normal_daily_average_records" aria-label="Explicacao do indicador">?</button>
@@ -327,7 +240,7 @@
 
   <div class="row g-3 mb-3">
     <div class="col-lg-6">
-      <div class="border rounded p-3 h-100 chart-panel">
+      <div class="border rounded p-3 h-100 chart-panel dashboard-panel">
         <div class="d-flex justify-content-between gap-2">
           <h3 class="h6">{{ charts.billing_vs_delivery_by_day.title }}</h3>
           <button class="dashboard-info-button" type="button" data-help-key="charts.billing_vs_delivery_by_day" aria-label="Explicacao do grafico">?</button>
@@ -338,65 +251,7 @@
       </div>
     </div>
     <div class="col-lg-6">
-      <div class="border rounded p-3 h-100 chart-panel">
-        <div class="d-flex justify-content-between gap-2">
-          <h3 class="h6">{{ charts.delay_by_issue_day.title }}</h3>
-          <button class="dashboard-info-button" type="button" data-help-key="charts.delay_by_issue_day" aria-label="Explicacao do grafico">?</button>
-        </div>
-        <div class="chart-frame">
-          <canvas id="chart-delay-by-issue-day"></canvas>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="table-responsive">
-    <table class="table table-sm align-middle">
-      <thead>
-        <tr>
-          <th>Periodo</th>
-          <th>Dias</th>
-          <th>Registros</th>
-          <th>Participacao</th>
-          <th>Media diaria</th>
-          <th>Valor NF</th>
-          <th>Atraso operacional %</th>
-          <th>Atraso transportadora %</th>
-          <th>LT operacional medio</th>
-          <th>P90 operacional</th>
-          <th>Severidade atraso h</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in tables.commercial_pressure_summary %}
-          <tr>
-            <td>{{ row.period }}</td>
-            <td>{{ row.issue_days }}</td>
-            <td>{{ row.records }}</td>
-            <td>{{ row.records_share }}%</td>
-            <td>{{ row.daily_average_records }}</td>
-            <td>R$ {{ row.total_invoice_value }}</td>
-            <td>{{ row.operational_late_percentage }}%</td>
-            <td>{{ row.carrier_late_percentage }}%</td>
-            <td>{{ row.average_operational_lead_time_hours }}h</td>
-            <td>{{ row.operational_lead_time_p90_hours }}h</td>
-            <td>{{ row.delay_severity_hours }}</td>
-          </tr>
-        {% empty %}
-          <tr>
-            <td colspan="11" class="text-muted">Sem dados para exibir.</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section class="mt-3 border rounded p-3">
-  <h2 class="h5">Graficos</h2>
-  <div class="row g-3">
-    <div class="col-lg-6">
-      <div class="border rounded p-3 h-100 chart-panel">
+      <div class="border rounded p-3 h-100 chart-panel dashboard-panel">
         <div class="d-flex justify-content-between gap-2">
           <h3 class="h6">{{ charts.records_by_day.title }}</h3>
           <button class="dashboard-info-button" type="button" data-help-key="charts.records_by_day" aria-label="Explicacao do grafico">?</button>
@@ -406,30 +261,121 @@
         </div>
       </div>
     </div>
-    <div class="col-lg-6">
-      <div class="border rounded p-3 h-100 chart-panel">
+  </div>
+
+  <div class="dashboard-table-block">
+    <div class="d-flex justify-content-between gap-2">
+      <h3 class="h6">Pressao Comercial</h3>
+      <button class="dashboard-info-button" type="button" data-help-key="tables.commercial_pressure_summary" aria-label="Explicacao da analise">?</button>
+    </div>
+    <p class="text-muted small mb-3">
+      Analise da demanda criada pelo faturamento e do impacto nos prazos da logistica.
+    </p>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>Periodo</th>
+            <th>Dias</th>
+            <th>Registros</th>
+            <th>Participacao</th>
+            <th>Media diaria</th>
+            <th>Valor NF</th>
+            <th>Atraso operacional %</th>
+            <th>Atraso transportadora %</th>
+            <th>LT operacional medio</th>
+            <th>P90 operacional</th>
+            <th>Severidade atraso h</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in tables.commercial_pressure_summary %}
+            <tr>
+              <td>{{ row.period }}</td>
+              <td>{{ row.issue_days }}</td>
+              <td>{{ row.records }}</td>
+              <td>{{ row.records_share }}%</td>
+              <td>{{ row.daily_average_records }}</td>
+              <td>R$ {{ row.total_invoice_value }}</td>
+              <td>{{ row.operational_late_percentage }}%</td>
+              <td>{{ row.carrier_late_percentage }}%</td>
+              <td>{{ row.average_operational_lead_time_hours }}h</td>
+              <td>{{ row.operational_lead_time_p90_hours }}h</td>
+              <td>{{ row.delay_severity_hours }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="11" class="text-muted">Sem dados para exibir.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "dashboard/includes/table_pagination.html" with pagination=table_pagination.commercial_pressure_summary %}
+  </div>
+</section>
+
+<section class="dashboard-section" aria-labelledby="operation-section-title">
+  <div class="dashboard-section-heading">
+    <div>
+      <h2 id="operation-section-title" class="h5">2. Separacao</h2>
+      <p>Processamento interno da logistica entre faturamento e saida.</p>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-3">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
         <div class="d-flex justify-content-between gap-2">
-          <h3 class="h6">{{ charts.driver_efficiency_scatter.title }}</h3>
-          <button class="dashboard-info-button" type="button" data-help-key="charts.driver_efficiency_scatter" aria-label="Explicacao do grafico">?</button>
+          <span class="text-muted">SLA operacional (&lt;= {{ cards.operational_target_hours }}h uteis)</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.operational_sla_rate" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-4">{{ cards.operational_sla_rate }}%</strong>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">Lead time operacional medio</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.average_operational_lead_time_hours" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-4">{{ cards.average_operational_lead_time_hours }}h</strong>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">P90 operacional</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.operational_lead_time_p90_hours" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-4">{{ cards.operational_lead_time_p90_hours }}h</strong>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">Atraso operacional (&gt; {{ cards.operational_target_hours }}h uteis)</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.operational_late_percentage" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-4">{{ cards.operational_late_percentage }}%</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-lg-6">
+      <div class="border rounded p-3 h-100 chart-panel dashboard-panel">
+        <div class="d-flex justify-content-between gap-2">
+          <h3 class="h6">{{ charts.delay_by_issue_day.title }}</h3>
+          <button class="dashboard-info-button" type="button" data-help-key="charts.delay_by_issue_day" aria-label="Explicacao do grafico">?</button>
         </div>
         <div class="chart-frame">
-          <canvas id="chart-driver-efficiency-scatter"></canvas>
+          <canvas id="chart-delay-by-issue-day"></canvas>
         </div>
       </div>
     </div>
     <div class="col-lg-6">
-      <div class="border rounded p-3 h-100 chart-panel">
-        <div class="d-flex justify-content-between gap-2">
-          <h3 class="h6">{{ charts.critical_routes_ranking.title }}</h3>
-          <button class="dashboard-info-button" type="button" data-help-key="charts.critical_routes_ranking" aria-label="Explicacao do grafico">?</button>
-        </div>
-        <div class="chart-frame">
-          <canvas id="chart-critical-routes-ranking"></canvas>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-6">
-      <div class="border rounded p-3 h-100 chart-panel">
+      <div class="border rounded p-3 h-100 chart-panel dashboard-panel">
         <div class="d-flex justify-content-between gap-2">
           <h3 class="h6">{{ charts.weekday_bottleneck.title }}</h3>
           <button class="dashboard-info-button" type="button" data-help-key="charts.weekday_bottleneck" aria-label="Explicacao do grafico">?</button>
@@ -440,7 +386,288 @@
       </div>
     </div>
     <div class="col-lg-6">
-      <div class="border rounded p-3 h-100 chart-panel">
+      <div class="border rounded p-3 h-100 chart-panel dashboard-panel">
+        <div class="d-flex justify-content-between gap-2">
+          <h3 class="h6">{{ charts.lead_time_distribution.title }}</h3>
+          <button class="dashboard-info-button" type="button" data-help-key="charts.lead_time_distribution" aria-label="Explicacao do grafico">?</button>
+        </div>
+        <div class="chart-frame">
+          <canvas id="chart-lead-time-distribution"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-table-block mb-3">
+    <div class="d-flex justify-content-between gap-2">
+      <h3 class="h6">Motoristas fora da curva</h3>
+      <button class="dashboard-info-button" type="button" data-help-key="tables.driver_outliers" aria-label="Explicacao da tabela">?</button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>Motorista</th>
+            <th>Registros</th>
+            <th>Entregues</th>
+            <th>Atrasados</th>
+            <th>Valor NF</th>
+            <th>Severidade atraso h</th>
+            <th>LT operacional medio</th>
+            <th>P90 operacional</th>
+            <th>LT transportadora medio</th>
+            <th>Atraso operacional %</th>
+            <th>Atraso transportadora %</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in tables.driver_outliers %}
+            <tr>
+              <td>{{ row.driver_name }}</td>
+              <td>{{ row.total_records }}</td>
+              <td>{{ row.delivered_records }}</td>
+              <td>{{ row.delayed_records }}</td>
+              <td>R$ {{ row.total_invoice_value }}</td>
+              <td>{{ row.delay_severity_hours }}</td>
+              <td>{{ row.average_operational_lead_time_hours }}h</td>
+              <td>{{ row.operational_lead_time_p90_hours }}h</td>
+              <td>{{ row.average_carrier_lead_time_hours }}h</td>
+              <td>{{ row.operational_late_percentage }}%</td>
+              <td>{{ row.carrier_late_percentage }}%</td>
+              <td>{{ row.criticality_score }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="12" class="text-muted">Sem dados para exibir.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "dashboard/includes/table_pagination.html" with pagination=table_pagination.driver_outliers %}
+  </div>
+
+  <div class="dashboard-table-block">
+    <div class="d-flex justify-content-between gap-2">
+      <h3 class="h6">Notas fiscais fora da curva</h3>
+      <button class="dashboard-info-button" type="button" data-help-key="tables.invoice_outliers" aria-label="Explicacao da tabela">?</button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>NF</th>
+            <th>Serie</th>
+            <th>Motorista</th>
+            <th>Pauta/Rota</th>
+            <th>Cidade</th>
+            <th>Valor NF</th>
+            <th>Emissao</th>
+            <th>Entrega</th>
+            <th>LT operacional</th>
+            <th>LT transportadora</th>
+            <th>Status carga</th>
+            <th>Status entrega</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in tables.invoice_outliers %}
+            <tr>
+              <td>{{ row.invoice_number }}</td>
+              <td>{{ row.invoice_series }}</td>
+              <td>{{ row.driver_name }}</td>
+              <td>{{ row.route }}</td>
+              <td>{{ row.city }}</td>
+              <td>R$ {{ row.invoice_value }}</td>
+              <td>{{ row.invoice_issue_date }}</td>
+              <td>{{ row.customer_delivery_date }}</td>
+              <td>{{ row.operational_lead_time_hours }}h</td>
+              <td>{{ row.carrier_lead_time_hours }}h</td>
+              <td>{{ row.cargo_status }}</td>
+              <td>{{ row.delivery_status }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="12" class="text-muted">Sem dados para exibir.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "dashboard/includes/table_pagination.html" with pagination=table_pagination.invoice_outliers %}
+  </div>
+</section>
+
+<section class="dashboard-section" aria-labelledby="delivery-section-title">
+  <div class="dashboard-section-heading">
+    <div>
+      <h2 id="delivery-section-title" class="h5">3. Expedicao e Entrega</h2>
+      <p>Saida, entrega ao cliente e pendencias de finalizacao.</p>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-3">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">Entregues</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.delivered_records" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-4">{{ cards.delivered_records }}</strong>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">Pendentes</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.pending_records" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-4">{{ cards.pending_records }}</strong>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">SLA transportadora (&lt;= {{ cards.carrier_target_hours }}h uteis)</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.carrier_sla_rate" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-4">{{ cards.carrier_sla_rate }}%</strong>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">Lead time transportadora medio</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.average_carrier_lead_time_hours" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-4">{{ cards.average_carrier_lead_time_hours }}h</strong>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">P90 transportadora</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.carrier_lead_time_p90_hours" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-4">{{ cards.carrier_lead_time_p90_hours }}h</strong>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">Atraso transportadora (&gt; {{ cards.carrier_target_hours }}h uteis)</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.carrier_late_percentage" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-4">{{ cards.carrier_late_percentage }}%</strong>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">Divergencias de status</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.status_inconsistency_count" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-4">{{ cards.status_inconsistency_count }}</strong>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">Divergencia de status %</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.status_inconsistency_percentage" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-4">{{ cards.status_inconsistency_percentage }}%</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-table-block">
+    <div class="d-flex justify-content-between gap-2">
+      <h3 class="h6">Divergencias de status</h3>
+      <button class="dashboard-info-button" type="button" data-help-key="tables.status_inconsistencies" aria-label="Explicacao da tabela">?</button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>NF</th>
+            <th>Serie</th>
+            <th>Motorista</th>
+            <th>Pauta/Rota</th>
+            <th>Cidade</th>
+            <th>Emissao</th>
+            <th>Entrega</th>
+            <th>Status carga</th>
+            <th>Status entrega</th>
+            <th>LT operacional</th>
+            <th>LT transportadora</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in tables.status_inconsistencies %}
+            <tr>
+              <td>{{ row.invoice_number }}</td>
+              <td>{{ row.invoice_series }}</td>
+              <td>{{ row.driver_name }}</td>
+              <td>{{ row.route }}</td>
+              <td>{{ row.city }}</td>
+              <td>{{ row.invoice_issue_date }}</td>
+              <td>{{ row.customer_delivery_date }}</td>
+              <td>{{ row.cargo_status }}</td>
+              <td>{{ row.delivery_status }}</td>
+              <td>{{ row.operational_lead_time_hours }}h</td>
+              <td>{{ row.carrier_lead_time_hours }}h</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="11" class="text-muted">Sem dados para exibir.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "dashboard/includes/table_pagination.html" with pagination=table_pagination.status_inconsistencies %}
+  </div>
+</section>
+
+<section class="dashboard-section" aria-labelledby="critical-section-title">
+  <div class="dashboard-section-heading">
+    <div>
+      <h2 id="critical-section-title" class="h5">4. Pontos criticos</h2>
+      <p>Priorizacao dos maiores gargalos por rota, cidade, regiao, frequencia e impacto.</p>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-lg-4">
+      <div class="border rounded p-3 h-100 dashboard-kpi-card">
+        <div class="d-flex justify-content-between gap-2">
+          <span class="text-muted">Ponto critico</span>
+          <button class="dashboard-info-button" type="button" data-help-key="cards.top_critical_route" aria-label="Explicacao do indicador">?</button>
+        </div>
+        <strong class="d-block fs-5">{{ cards.top_critical_route.route }}</strong>
+        <div class="small text-muted">
+          Score {{ cards.top_critical_route.criticality_score }} |
+          {{ cards.top_critical_route.total_records }} registros |
+          {{ cards.top_critical_route.delayed_percentage }}% atraso |
+          {{ cards.top_critical_route.delay_severity_hours }}h severidade
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="border rounded p-3 h-100 chart-panel dashboard-panel">
+        <div class="d-flex justify-content-between gap-2">
+          <h3 class="h6">{{ charts.critical_routes_ranking.title }}</h3>
+          <button class="dashboard-info-button" type="button" data-help-key="charts.critical_routes_ranking" aria-label="Explicacao do grafico">?</button>
+        </div>
+        <div class="chart-frame">
+          <canvas id="chart-critical-routes-ranking"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="border rounded p-3 h-100 chart-panel dashboard-panel">
         <div class="d-flex justify-content-between gap-2">
           <h3 class="h6">{{ charts.delay_pareto.title }}</h3>
           <button class="dashboard-info-button" type="button" data-help-key="charts.delay_pareto" aria-label="Explicacao do grafico">?</button>
@@ -451,18 +678,7 @@
       </div>
     </div>
     <div class="col-lg-6">
-      <div class="border rounded p-3 h-100 chart-panel">
-        <div class="d-flex justify-content-between gap-2">
-          <h3 class="h6">{{ charts.lead_time_distribution.title }}</h3>
-          <button class="dashboard-info-button" type="button" data-help-key="charts.lead_time_distribution" aria-label="Explicacao do grafico">?</button>
-        </div>
-        <div class="chart-frame">
-          <canvas id="chart-lead-time-distribution"></canvas>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-6">
-      <div class="border rounded p-3 h-100 chart-panel">
+      <div class="border rounded p-3 h-100 chart-panel dashboard-panel">
         <div class="d-flex justify-content-between gap-2">
           <h3 class="h6">{{ charts.region_lead_time_comparison.title }}</h3>
           <button class="dashboard-info-button" type="button" data-help-key="charts.region_lead_time_comparison" aria-label="Explicacao do grafico">?</button>
@@ -473,7 +689,7 @@
       </div>
     </div>
     <div class="col-lg-6">
-      <div class="border rounded p-3 h-100 chart-panel">
+      <div class="border rounded p-3 h-100 chart-panel dashboard-panel">
         <div class="d-flex justify-content-between gap-2">
           <h3 class="h6">{{ charts.frequency_lead_time_comparison.title }}</h3>
           <button class="dashboard-info-button" type="button" data-help-key="charts.frequency_lead_time_comparison" aria-label="Explicacao do grafico">?</button>
@@ -483,337 +699,213 @@
         </div>
       </div>
     </div>
+    <div class="col-lg-6">
+      <div class="border rounded p-3 h-100 chart-panel dashboard-panel">
+        <div class="d-flex justify-content-between gap-2">
+          <h3 class="h6">{{ charts.driver_efficiency_scatter.title }}</h3>
+          <button class="dashboard-info-button" type="button" data-help-key="charts.driver_efficiency_scatter" aria-label="Explicacao do grafico">?</button>
+        </div>
+        <div class="chart-frame">
+          <canvas id="chart-driver-efficiency-scatter"></canvas>
+        </div>
+      </div>
+    </div>
   </div>
-</section>
 
-<section class="mt-3 border rounded p-3">
-  <div class="d-flex justify-content-between gap-2">
-    <h2 class="h5">Motoristas fora da curva</h2>
-    <button class="dashboard-info-button" type="button" data-help-key="tables.driver_outliers" aria-label="Explicacao da tabela">?</button>
-  </div>
-  <div class="table-responsive">
-    <table class="table table-sm align-middle">
-      <thead>
-        <tr>
-          <th>Motorista</th>
-          <th>Registros</th>
-          <th>Entregues</th>
-          <th>Atrasados</th>
-          <th>Valor NF</th>
-          <th>Severidade atraso h</th>
-          <th>LT operacional medio</th>
-          <th>P90 operacional</th>
-          <th>LT transportadora medio</th>
-          <th>Atraso operacional %</th>
-          <th>Atraso transportadora %</th>
-          <th>Score</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in tables.driver_outliers %}
+  <div class="dashboard-table-block mb-3">
+    <div class="d-flex justify-content-between gap-2">
+      <h3 class="h6">Rotas criticas</h3>
+      <button class="dashboard-info-button" type="button" data-help-key="tables.critical_routes" aria-label="Explicacao da tabela">?</button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
           <tr>
-            <td>{{ row.driver_name }}</td>
-            <td>{{ row.total_records }}</td>
-            <td>{{ row.delivered_records }}</td>
-            <td>{{ row.delayed_records }}</td>
-            <td>R$ {{ row.total_invoice_value }}</td>
-            <td>{{ row.delay_severity_hours }}</td>
-            <td>{{ row.average_operational_lead_time_hours }}h</td>
-            <td>{{ row.operational_lead_time_p90_hours }}h</td>
-            <td>{{ row.average_carrier_lead_time_hours }}h</td>
-            <td>{{ row.operational_late_percentage }}%</td>
-            <td>{{ row.carrier_late_percentage }}%</td>
-            <td>{{ row.criticality_score }}</td>
+            <th>Pauta/Rota</th>
+            <th>Registros</th>
+            <th>Entregues</th>
+            <th>Atrasados</th>
+            <th>Cidades atendidas</th>
+            <th>Valor NF</th>
+            <th>Severidade atraso h</th>
+            <th>LT operacional medio</th>
+            <th>P90 operacional</th>
+            <th>Atraso operacional %</th>
+            <th>Atraso transportadora %</th>
+            <th>Score</th>
           </tr>
-        {% empty %}
-          <tr>
-            <td colspan="12" class="text-muted">Sem dados para exibir.</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {% for row in tables.critical_routes %}
+            <tr>
+              <td>{{ row.route }}</td>
+              <td>{{ row.total_records }}</td>
+              <td>{{ row.delivered_records }}</td>
+              <td>{{ row.delayed_records }}</td>
+              <td>{{ row.served_cities }}</td>
+              <td>R$ {{ row.total_invoice_value }}</td>
+              <td>{{ row.delay_severity_hours }}</td>
+              <td>{{ row.average_operational_lead_time_hours }}h</td>
+              <td>{{ row.operational_lead_time_p90_hours }}h</td>
+              <td>{{ row.operational_late_percentage }}%</td>
+              <td>{{ row.carrier_late_percentage }}%</td>
+              <td>{{ row.criticality_score }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="12" class="text-muted">Sem dados para exibir.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "dashboard/includes/table_pagination.html" with pagination=table_pagination.critical_routes %}
   </div>
-</section>
 
-<section class="mt-3 border rounded p-3">
-  <div class="d-flex justify-content-between gap-2">
-    <h2 class="h5">Rotas criticas</h2>
-    <button class="dashboard-info-button" type="button" data-help-key="tables.critical_routes" aria-label="Explicacao da tabela">?</button>
-  </div>
-  <div class="table-responsive">
-    <table class="table table-sm align-middle">
-      <thead>
-        <tr>
-          <th>Pauta/Rota</th>
-          <th>Registros</th>
-          <th>Entregues</th>
-          <th>Atrasados</th>
-          <th>Cidades atendidas</th>
-          <th>Valor NF</th>
-          <th>Severidade atraso h</th>
-          <th>LT operacional medio</th>
-          <th>P90 operacional</th>
-          <th>Atraso operacional %</th>
-          <th>Atraso transportadora %</th>
-          <th>Score</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in tables.critical_routes %}
-          <tr>
-            <td>{{ row.route }}</td>
-            <td>{{ row.total_records }}</td>
-            <td>{{ row.delivered_records }}</td>
-            <td>{{ row.delayed_records }}</td>
-            <td>{{ row.served_cities }}</td>
-            <td>R$ {{ row.total_invoice_value }}</td>
-            <td>{{ row.delay_severity_hours }}</td>
-            <td>{{ row.average_operational_lead_time_hours }}h</td>
-            <td>{{ row.operational_lead_time_p90_hours }}h</td>
-            <td>{{ row.operational_late_percentage }}%</td>
-            <td>{{ row.carrier_late_percentage }}%</td>
-            <td>{{ row.criticality_score }}</td>
-          </tr>
-        {% empty %}
-          <tr>
-            <td colspan="12" class="text-muted">Sem dados para exibir.</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section class="mt-3 border rounded p-3">
-  <div class="d-flex justify-content-between gap-2">
-    <h2 class="h5">Cidades criticas</h2>
-    <button class="dashboard-info-button" type="button" data-help-key="tables.critical_cities" aria-label="Explicacao da tabela">?</button>
-  </div>
-  <div class="table-responsive">
-    <table class="table table-sm align-middle">
-      <thead>
-        <tr>
-          <th>Cidade</th>
-          <th>Registros</th>
-          <th>Rotas</th>
-          <th>Atrasados</th>
-          <th>Valor NF</th>
-          <th>LT operacional medio</th>
-          <th>LT transportadora medio</th>
-          <th>Severidade atraso h</th>
-          <th>Atraso operacional %</th>
-          <th>Atraso transportadora %</th>
-          <th>Score</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in tables.critical_cities %}
-          <tr>
-            <td>{{ row.city }}</td>
-            <td>{{ row.total_records }}</td>
-            <td>{{ row.routes }}</td>
-            <td>{{ row.delayed_records }}</td>
-            <td>R$ {{ row.total_invoice_value }}</td>
-            <td>{{ row.average_operational_lead_time_hours }}h</td>
-            <td>{{ row.average_carrier_lead_time_hours }}h</td>
-            <td>{{ row.delay_severity_hours }}</td>
-            <td>{{ row.operational_late_percentage }}%</td>
-            <td>{{ row.carrier_late_percentage }}%</td>
-            <td>{{ row.criticality_score }}</td>
-          </tr>
-        {% empty %}
-          <tr>
-            <td colspan="11" class="text-muted">Sem dados para exibir.</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section class="mt-3 border rounded p-3">
-  <div class="d-flex justify-content-between gap-2">
-    <h2 class="h5">Regioes criticas</h2>
-    <button class="dashboard-info-button" type="button" data-help-key="tables.critical_regions" aria-label="Explicacao da tabela">?</button>
-  </div>
-  <div class="table-responsive">
-    <table class="table table-sm align-middle">
-      <thead>
-        <tr>
-          <th>Regiao</th>
-          <th>Registros</th>
-          <th>Atrasados</th>
-          <th>Valor NF</th>
-          <th>LT operacional medio</th>
-          <th>LT transportadora medio</th>
-          <th>Severidade atraso h</th>
-          <th>Atraso operacional %</th>
-          <th>Atraso transportadora %</th>
-          <th>Score</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in tables.critical_regions %}
-          <tr>
-            <td>{{ row.region }}</td>
-            <td>{{ row.total_records }}</td>
-            <td>{{ row.delayed_records }}</td>
-            <td>R$ {{ row.total_invoice_value }}</td>
-            <td>{{ row.average_operational_lead_time_hours }}h</td>
-            <td>{{ row.average_carrier_lead_time_hours }}h</td>
-            <td>{{ row.delay_severity_hours }}</td>
-            <td>{{ row.operational_late_percentage }}%</td>
-            <td>{{ row.carrier_late_percentage }}%</td>
-            <td>{{ row.criticality_score }}</td>
-          </tr>
-        {% empty %}
-          <tr>
-            <td colspan="10" class="text-muted">Sem dados para exibir.</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section class="mt-3 border rounded p-3">
-  <div class="d-flex justify-content-between gap-2">
-    <h2 class="h5">Frequencias criticas</h2>
-    <button class="dashboard-info-button" type="button" data-help-key="tables.critical_frequencies" aria-label="Explicacao da tabela">?</button>
-  </div>
-  <div class="table-responsive">
-    <table class="table table-sm align-middle">
-      <thead>
-        <tr>
-          <th>Frequencia</th>
-          <th>Registros</th>
-          <th>Atrasados</th>
-          <th>Valor NF</th>
-          <th>LT operacional medio</th>
-          <th>LT transportadora medio</th>
-          <th>Severidade atraso h</th>
-          <th>Atraso operacional %</th>
-          <th>Atraso transportadora %</th>
-          <th>Score</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in tables.critical_frequencies %}
-          <tr>
-            <td>{{ row.frequency }}</td>
-            <td>{{ row.total_records }}</td>
-            <td>{{ row.delayed_records }}</td>
-            <td>R$ {{ row.total_invoice_value }}</td>
-            <td>{{ row.average_operational_lead_time_hours }}h</td>
-            <td>{{ row.average_carrier_lead_time_hours }}h</td>
-            <td>{{ row.delay_severity_hours }}</td>
-            <td>{{ row.operational_late_percentage }}%</td>
-            <td>{{ row.carrier_late_percentage }}%</td>
-            <td>{{ row.criticality_score }}</td>
-          </tr>
-        {% empty %}
-          <tr>
-            <td colspan="10" class="text-muted">Sem dados para exibir.</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section class="mt-3 border rounded p-3">
-  <div class="d-flex justify-content-between gap-2">
-    <h2 class="h5">Notas fiscais fora da curva</h2>
-    <button class="dashboard-info-button" type="button" data-help-key="tables.invoice_outliers" aria-label="Explicacao da tabela">?</button>
-  </div>
-  <div class="table-responsive">
-    <table class="table table-sm align-middle">
-      <thead>
-        <tr>
-          <th>NF</th>
-          <th>Serie</th>
-          <th>Motorista</th>
-          <th>Pauta/Rota</th>
-          <th>Cidade</th>
-          <th>Valor NF</th>
-          <th>Emissao</th>
-          <th>Entrega</th>
-          <th>LT operacional</th>
-          <th>LT transportadora</th>
-          <th>Status carga</th>
-          <th>Status entrega</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in tables.invoice_outliers %}
-          <tr>
-            <td>{{ row.invoice_number }}</td>
-            <td>{{ row.invoice_series }}</td>
-            <td>{{ row.driver_name }}</td>
-            <td>{{ row.route }}</td>
-            <td>{{ row.city }}</td>
-            <td>R$ {{ row.invoice_value }}</td>
-            <td>{{ row.invoice_issue_date }}</td>
-            <td>{{ row.customer_delivery_date }}</td>
-            <td>{{ row.operational_lead_time_hours }}h</td>
-            <td>{{ row.carrier_lead_time_hours }}h</td>
-            <td>{{ row.cargo_status }}</td>
-            <td>{{ row.delivery_status }}</td>
-          </tr>
-        {% empty %}
-          <tr>
-            <td colspan="12" class="text-muted">Sem dados para exibir.</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section class="mt-3 border rounded p-3">
-  <div class="d-flex justify-content-between gap-2">
-    <h2 class="h5">Divergencias de status</h2>
-    <button class="dashboard-info-button" type="button" data-help-key="tables.status_inconsistencies" aria-label="Explicacao da tabela">?</button>
-  </div>
-  <div class="table-responsive">
-    <table class="table table-sm align-middle">
-      <thead>
-        <tr>
-          <th>NF</th>
-          <th>Serie</th>
-          <th>Motorista</th>
-          <th>Pauta/Rota</th>
-          <th>Cidade</th>
-          <th>Emissao</th>
-          <th>Entrega</th>
-          <th>Status carga</th>
-          <th>Status entrega</th>
-          <th>LT operacional</th>
-          <th>LT transportadora</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in tables.status_inconsistencies %}
-          <tr>
-            <td>{{ row.invoice_number }}</td>
-            <td>{{ row.invoice_series }}</td>
-            <td>{{ row.driver_name }}</td>
-            <td>{{ row.route }}</td>
-            <td>{{ row.city }}</td>
-            <td>{{ row.invoice_issue_date }}</td>
-            <td>{{ row.customer_delivery_date }}</td>
-            <td>{{ row.cargo_status }}</td>
-            <td>{{ row.delivery_status }}</td>
-            <td>{{ row.operational_lead_time_hours }}h</td>
-            <td>{{ row.carrier_lead_time_hours }}h</td>
-          </tr>
-        {% empty %}
-          <tr>
-            <td colspan="11" class="text-muted">Sem dados para exibir.</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="row g-3">
+    <div class="col-xl-6">
+      <div class="dashboard-table-block h-100">
+        <div class="d-flex justify-content-between gap-2">
+          <h3 class="h6">Cidades criticas</h3>
+          <button class="dashboard-info-button" type="button" data-help-key="tables.critical_cities" aria-label="Explicacao da tabela">?</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>Cidade</th>
+                <th>Registros</th>
+                <th>Rotas</th>
+                <th>Atrasados</th>
+                <th>Valor NF</th>
+                <th>LT operacional medio</th>
+                <th>LT transportadora medio</th>
+                <th>Severidade atraso h</th>
+                <th>Atraso operacional %</th>
+                <th>Atraso transportadora %</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in tables.critical_cities %}
+                <tr>
+                  <td>{{ row.city }}</td>
+                  <td>{{ row.total_records }}</td>
+                  <td>{{ row.routes }}</td>
+                  <td>{{ row.delayed_records }}</td>
+                  <td>R$ {{ row.total_invoice_value }}</td>
+                  <td>{{ row.average_operational_lead_time_hours }}h</td>
+                  <td>{{ row.average_carrier_lead_time_hours }}h</td>
+                  <td>{{ row.delay_severity_hours }}</td>
+                  <td>{{ row.operational_late_percentage }}%</td>
+                  <td>{{ row.carrier_late_percentage }}%</td>
+                  <td>{{ row.criticality_score }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="11" class="text-muted">Sem dados para exibir.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% include "dashboard/includes/table_pagination.html" with pagination=table_pagination.critical_cities %}
+      </div>
+    </div>
+    <div class="col-xl-6">
+      <div class="dashboard-table-block h-100">
+        <div class="d-flex justify-content-between gap-2">
+          <h3 class="h6">Regioes criticas</h3>
+          <button class="dashboard-info-button" type="button" data-help-key="tables.critical_regions" aria-label="Explicacao da tabela">?</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>Regiao</th>
+                <th>Registros</th>
+                <th>Atrasados</th>
+                <th>Valor NF</th>
+                <th>LT operacional medio</th>
+                <th>LT transportadora medio</th>
+                <th>Severidade atraso h</th>
+                <th>Atraso operacional %</th>
+                <th>Atraso transportadora %</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in tables.critical_regions %}
+                <tr>
+                  <td>{{ row.region }}</td>
+                  <td>{{ row.total_records }}</td>
+                  <td>{{ row.delayed_records }}</td>
+                  <td>R$ {{ row.total_invoice_value }}</td>
+                  <td>{{ row.average_operational_lead_time_hours }}h</td>
+                  <td>{{ row.average_carrier_lead_time_hours }}h</td>
+                  <td>{{ row.delay_severity_hours }}</td>
+                  <td>{{ row.operational_late_percentage }}%</td>
+                  <td>{{ row.carrier_late_percentage }}%</td>
+                  <td>{{ row.criticality_score }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="10" class="text-muted">Sem dados para exibir.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% include "dashboard/includes/table_pagination.html" with pagination=table_pagination.critical_regions %}
+      </div>
+    </div>
+    <div class="col-xl-6">
+      <div class="dashboard-table-block h-100">
+        <div class="d-flex justify-content-between gap-2">
+          <h3 class="h6">Frequencias criticas</h3>
+          <button class="dashboard-info-button" type="button" data-help-key="tables.critical_frequencies" aria-label="Explicacao da tabela">?</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>Frequencia</th>
+                <th>Registros</th>
+                <th>Atrasados</th>
+                <th>Valor NF</th>
+                <th>LT operacional medio</th>
+                <th>LT transportadora medio</th>
+                <th>Severidade atraso h</th>
+                <th>Atraso operacional %</th>
+                <th>Atraso transportadora %</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in tables.critical_frequencies %}
+                <tr>
+                  <td>{{ row.frequency }}</td>
+                  <td>{{ row.total_records }}</td>
+                  <td>{{ row.delayed_records }}</td>
+                  <td>R$ {{ row.total_invoice_value }}</td>
+                  <td>{{ row.average_operational_lead_time_hours }}h</td>
+                  <td>{{ row.average_carrier_lead_time_hours }}h</td>
+                  <td>{{ row.delay_severity_hours }}</td>
+                  <td>{{ row.operational_late_percentage }}%</td>
+                  <td>{{ row.carrier_late_percentage }}%</td>
+                  <td>{{ row.criticality_score }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="10" class="text-muted">Sem dados para exibir.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% include "dashboard/includes/table_pagination.html" with pagination=table_pagination.critical_frequencies %}
+      </div>
+    </div>
   </div>
 </section>
 
@@ -826,6 +918,8 @@
 {% endblock %}
 
 {% block scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/js/tom-select.complete.min.js"></script>
   <script src="{% static 'js/dashboard_charts.js' %}"></script>
   <script src="{% static 'js/dashboard_help.js' %}"></script>
+  <script src="{% static 'js/dashboard_filters.js' %}"></script>
 {% endblock %}

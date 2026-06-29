@@ -9,14 +9,18 @@ from django.utils.dateparse import parse_date
 class DashboardFilters:
     date_start: Optional[date] = None
     date_end: Optional[date] = None
-    driver_name: Optional[str] = None
-    route: Optional[str] = None
-    business_unit: Optional[str] = None
-    region: Optional[str] = None
-    frequency: Optional[str] = None
-    delivery_status: Optional[str] = None
-    cargo_status: Optional[str] = None
+    driver_name: List[str] = field(default_factory=list)
+    route: List[str] = field(default_factory=list)
+    business_unit: List[str] = field(default_factory=list)
+    region: List[str] = field(default_factory=list)
+    frequency: List[str] = field(default_factory=list)
+    delivery_status: List[str] = field(default_factory=list)
+    cargo_status: List[str] = field(default_factory=list)
     errors: List[str] = field(default_factory=list)
+
+    def __post_init__(self):
+        for field_name in _MULTI_VALUE_FIELDS:
+            object.__setattr__(self, field_name, _clean_values(getattr(self, field_name)))
 
     @classmethod
     def from_querydict(cls, querydict):
@@ -27,13 +31,13 @@ class DashboardFilters:
         return cls(
             date_start=date_start,
             date_end=date_end,
-            driver_name=_clean_value(querydict.get("driver_name")),
-            route=_clean_value(querydict.get("route")),
-            business_unit=_clean_value(querydict.get("business_unit")),
-            region=_clean_value(querydict.get("region")),
-            frequency=_clean_value(querydict.get("frequency")),
-            delivery_status=_clean_value(querydict.get("delivery_status")),
-            cargo_status=_clean_value(querydict.get("cargo_status")),
+            driver_name=_get_query_values(querydict, "driver_name"),
+            route=_get_query_values(querydict, "route"),
+            business_unit=_get_query_values(querydict, "business_unit"),
+            region=_get_query_values(querydict, "region"),
+            frequency=_get_query_values(querydict, "frequency"),
+            delivery_status=_get_query_values(querydict, "delivery_status"),
+            cargo_status=_get_query_values(querydict, "cargo_status"),
             errors=errors,
         )
 
@@ -43,33 +47,65 @@ class DashboardFilters:
         if self.date_end:
             queryset = queryset.filter(invoice_issue_date__lte=self.date_end)
         if self.driver_name:
-            queryset = queryset.filter(driver_name=self.driver_name)
+            queryset = queryset.filter(driver_name__in=self.driver_name)
         if self.route:
-            queryset = queryset.filter(route=self.route)
+            queryset = queryset.filter(route__in=self.route)
         if self.business_unit:
-            queryset = queryset.filter(business_unit=self.business_unit)
+            queryset = queryset.filter(business_unit__in=self.business_unit)
         if self.region:
-            queryset = queryset.filter(region=self.region)
+            queryset = queryset.filter(region__in=self.region)
         if self.frequency:
-            queryset = queryset.filter(frequency=self.frequency)
+            queryset = queryset.filter(frequency__in=self.frequency)
         if self.delivery_status:
-            queryset = queryset.filter(delivery_status=self.delivery_status)
+            queryset = queryset.filter(delivery_status__in=self.delivery_status)
         if self.cargo_status:
-            queryset = queryset.filter(cargo_status=self.cargo_status)
+            queryset = queryset.filter(cargo_status__in=self.cargo_status)
         return queryset
 
     def as_dict(self):
         return {
             "date_start": self.date_start.isoformat() if self.date_start else "",
             "date_end": self.date_end.isoformat() if self.date_end else "",
-            "driver_name": self.driver_name or "",
-            "route": self.route or "",
-            "business_unit": self.business_unit or "",
-            "region": self.region or "",
-            "frequency": self.frequency or "",
-            "delivery_status": self.delivery_status or "",
-            "cargo_status": self.cargo_status or "",
+            "driver_name": self.driver_name,
+            "route": self.route,
+            "business_unit": self.business_unit,
+            "region": self.region,
+            "frequency": self.frequency,
+            "delivery_status": self.delivery_status,
+            "cargo_status": self.cargo_status,
         }
+
+
+_MULTI_VALUE_FIELDS = (
+    "driver_name",
+    "route",
+    "business_unit",
+    "region",
+    "frequency",
+    "delivery_status",
+    "cargo_status",
+)
+
+
+def _get_query_values(querydict, field_name):
+    if hasattr(querydict, "getlist"):
+        return _clean_values(querydict.getlist(field_name))
+
+    return _clean_values(querydict.get(field_name))
+
+
+def _clean_values(values):
+    if values is None:
+        return []
+
+    if isinstance(values, str):
+        values = [values]
+
+    return [
+        cleaned_value
+        for cleaned_value in (_clean_value(value) for value in values)
+        if cleaned_value is not None
+    ]
 
 
 def _clean_value(value):
