@@ -1,0 +1,32 @@
+{% if pagination.total_pages > 1 %}
+  <nav class="dashboard-table-pagination" aria-label="Paginacao da tabela">
+    <div class="small text-muted">
+      Exibindo {{ pagination.start_index }}-{{ pagination.end_index }} de {{ pagination.total_items }}
+    </div>
+    <ul class="pagination pagination-sm mb-0">
+      <li class="page-item {% if not pagination.has_previous %}disabled{% endif %}">
+        <a
+          class="page-link"
+          href="{{ pagination.previous_url|default:'#' }}"
+          {% if not pagination.has_previous %}aria-disabled="true" tabindex="-1"{% endif %}
+        >
+          Anterior
+        </a>
+      </li>
+      {% for page_link in pagination.page_links %}
+        <li class="page-item {% if page_link.is_current %}active{% endif %}">
+          <a class="page-link" href="{{ page_link.url }}">{{ page_link.number }}</a>
+        </li>
+      {% endfor %}
+      <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+        <a
+          class="page-link"
+          href="{{ pagination.next_url|default:'#' }}"
+          {% if not pagination.has_next %}aria-disabled="true" tabindex="-1"{% endif %}
+        >
+          Proxima
+        </a>
+      </li>
+    </ul>
+  </nav>
+{% endif %}

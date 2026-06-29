@@ -4,7 +4,9 @@ from decimal import Decimal, ROUND_HALF_UP
 from math import ceil
 from typing import Optional
 
+from django.core.paginator import Paginator
 from django.db.models import Avg, Count, Q, Sum
+from django.http import QueryDict
 
 from imports.models import ImportBatch, LeadTimeRecord
 from imports.services.lead_time_calculation_service import (
@@ -20,9 +22,10 @@ from .dashboard_filters import DashboardFilters
 DELIVERED_STATUS_LOOKUP = Q(delivery_status__icontains="entreg")
 DELAYED_RECORDS_LOOKUP = Q(is_operational_late=True) | Q(is_carrier_late=True)
 TOP_GROUP_LIMIT = 10
+TABLE_PAGE_SIZE = 5
 
 
-def get_dashboard_context(filters: Optional[DashboardFilters] = None):
+def get_dashboard_context(filters: Optional[DashboardFilters] = None, querydict=None):
     filters = filters or DashboardFilters()
     base_queryset = LeadTimeRecord.objects.select_related("import_batch")
     filtered_queryset = filters.apply_to_queryset(base_queryset)
@@ -63,6 +66,19 @@ def get_dashboard_context(filters: Optional[DashboardFilters] = None):
     commercial_pressure = _get_commercial_pressure(filtered_queryset)
     cards = _get_cards(filtered_queryset, route_rows)
     cards.update(commercial_pressure["cards"])
+    raw_tables = {
+        "driver_outliers": _get_driver_outliers_table(filtered_queryset, driver_rows),
+        "critical_routes": _get_critical_routes_table(filtered_queryset, route_rows),
+        "critical_cities": _get_critical_cities_table(city_rows),
+        "critical_regions": _get_critical_dimension_table(region_rows, "region"),
+        "critical_frequencies": _get_critical_dimension_table(frequency_rows, "frequency"),
+        "invoice_outliers": _get_invoice_outliers_table(filtered_queryset),
+        "status_inconsistencies": _get_status_inconsistencies_table(filtered_queryset),
+        "commercial_pressure_summary": commercial_pressure["tables"][
+            "commercial_pressure_summary"
+        ],
+    }
+    tables, table_pagination = _paginate_tables(raw_tables, querydict)
 
     return {
         "filters": filters.as_dict(),
@@ -93,18 +109,8 @@ def get_dashboard_context(filters: Optional[DashboardFilters] = None):
             ],
             "delay_by_issue_day": commercial_pressure["charts"]["delay_by_issue_day"],
         },
-        "tables": {
-            "driver_outliers": _get_driver_outliers_table(filtered_queryset, driver_rows),
-            "critical_routes": _get_critical_routes_table(filtered_queryset, route_rows),
-            "critical_cities": _get_critical_cities_table(city_rows),
-            "critical_regions": _get_critical_dimension_table(region_rows, "region"),
-            "critical_frequencies": _get_critical_dimension_table(frequency_rows, "frequency"),
-            "invoice_outliers": _get_invoice_outliers_table(filtered_queryset),
-            "status_inconsistencies": _get_status_inconsistencies_table(filtered_queryset),
-            "commercial_pressure_summary": commercial_pressure["tables"][
-                "commercial_pressure_summary"
-            ],
-        },
+        "tables": tables,
+        "table_pagination": table_pagination,
         "explanations": get_analytics_explanations(),
         "metadata": {
             "last_successful_import": _get_last_successful_import(),
@@ -113,6 +119,82 @@ def get_dashboard_context(filters: Optional[DashboardFilters] = None):
             "carrier_target_hours": _format_decimal(CARRIER_TARGET_HOURS),
         },
     }
+
+
+def _paginate_tables(raw_tables, querydict):
+    tables = {}
+    table_pagination = {}
+
+    for table_key, rows in raw_tables.items():
+        page_param = f"{table_key}_page"
+        paginator = Paginator(rows, TABLE_PAGE_SIZE)
+        page = paginator.get_page(_get_requested_page_number(querydict, page_param))
+        tables[table_key] = list(page.object_list)
+        table_pagination[table_key] = _build_table_pagination(page, page_param, querydict)
+
+    return tables, table_pagination
+
+
+def _get_requested_page_number(querydict, page_param):
+    if not querydict:
+        return 1
+
+    if hasattr(querydict, "get"):
+        return querydict.get(page_param) or 1
+
+    return 1
+
+
+def _build_table_pagination(page, page_param, querydict):
+    page_links = [
+        {
+            "number": page_number,
+            "url": _build_page_url(querydict, page_param, page_number),
+            "is_current": page_number == page.number,
+        }
+        for page_number in page.paginator.page_range
+    ]
+
+    return {
+        "page_param": page_param,
+        "current_page": page.number,
+        "total_pages": page.paginator.num_pages,
+        "total_items": page.paginator.count,
+        "start_index": page.start_index() if page.paginator.count else 0,
+        "end_index": page.end_index() if page.paginator.count else 0,
+        "has_previous": page.has_previous(),
+        "has_next": page.has_next(),
+        "previous_url": _build_page_url(querydict, page_param, page.previous_page_number())
+        if page.has_previous()
+        else "",
+        "next_url": _build_page_url(querydict, page_param, page.next_page_number())
+        if page.has_next()
+        else "",
+        "page_links": page_links,
+    }
+
+
+def _build_page_url(querydict, page_param, page_number):
+    query = _copy_querydict(querydict)
+    query[page_param] = str(page_number)
+    querystring = query.urlencode()
+    return f"?{querystring}" if querystring else "?"
+
+
+def _copy_querydict(querydict):
+    if hasattr(querydict, "copy"):
+        return querydict.copy()
+
+    query = QueryDict("", mutable=True)
+    if not querydict:
+        return query
+
+    for key, value in querydict.items():
+        if isinstance(value, (list, tuple)):
+            query.setlist(key, [str(item) for item in value])
+        else:
+            query[key] = str(value)
+    return query
 
 
 def _get_cards(queryset, route_rows):

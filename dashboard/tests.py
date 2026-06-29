@@ -5,6 +5,7 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
+from django.http import QueryDict
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -87,9 +88,9 @@ class DashboardViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["filters"]["date_start"], "2026-05-01")
-        self.assertEqual(response.context["filters"]["route"], "RT030")
-        self.assertEqual(response.context["filters"]["region"], "SUL")
-        self.assertEqual(response.context["filters"]["frequency"], "DIARIA")
+        self.assertEqual(response.context["filters"]["route"], ["RT030"])
+        self.assertEqual(response.context["filters"]["region"], ["SUL"])
+        self.assertEqual(response.context["filters"]["frequency"], ["DIARIA"])
 
     def test_dashboard_context_contains_expected_contract_keys(self):
         self.client.force_login(self.viewer)
@@ -101,6 +102,7 @@ class DashboardViewTests(TestCase):
         self.assertIn("filter_options", response.context)
         self.assertIn("metadata", response.context)
         self.assertIn("explanations", response.context)
+        self.assertIn("table_pagination", response.context)
 
     def test_dashboard_renders_without_data(self):
         self.client.force_login(self.viewer)
@@ -134,6 +136,7 @@ class DashboardViewTests(TestCase):
         self.assertContains(response, 'data-help-key="charts.region_lead_time_comparison"')
         self.assertContains(response, "Pressao Comercial")
         self.assertContains(response, 'data-help-key="charts.billing_vs_delivery_by_day"')
+        self.assertContains(response, "dashboard_filters.js")
 
     def test_home_links_to_dashboard(self):
         self.client.force_login(self.viewer)
@@ -280,6 +283,41 @@ class DashboardExportTests(TestCase):
         self.assertEqual(worksheet["D2"].value, "BEATRIZ GOMES")
         self.assertEqual(worksheet["E2"].value, "RT030")
 
+    def test_export_with_multi_select_filters_returns_matching_records(self):
+        batch = self._create_batch()
+        self._create_record(
+            batch=batch,
+            row_number=1,
+            invoice_number="1001",
+            driver_name="BEATRIZ GOMES",
+            route="RT030",
+        )
+        self._create_record(
+            batch=batch,
+            row_number=2,
+            invoice_number="1002",
+            driver_name="ANA SILVA",
+            route="RT010",
+        )
+        self._create_record(
+            batch=batch,
+            row_number=3,
+            invoice_number="1003",
+            driver_name="CARLOS LIMA",
+            route="RT099",
+        )
+        query = QueryDict("", mutable=True)
+        query.setlist("driver_name", ["BEATRIZ GOMES", "ANA SILVA"])
+        query.setlist("route", ["RT030", "RT010"])
+        self.client.force_login(self.viewer)
+
+        response = self.client.get(self.export_url, query)
+        workbook = openpyxl.load_workbook(BytesIO(response.content))
+        worksheet = workbook["Dados filtrados"]
+
+        self.assertEqual(worksheet.max_row, 3)
+        self.assertEqual({worksheet["J2"].value, worksheet["J3"].value}, {"1001", "1002"})
+
     def test_export_button_is_visible_for_user_with_permission(self):
         self.client.force_login(self.viewer)
 
@@ -408,6 +446,8 @@ class DashboardAnalyticsTests(TestCase):
         self.assertIn("invoice_outliers", context["tables"])
         self.assertIn("status_inconsistencies", context["tables"])
         self.assertIn("commercial_pressure_summary", context["tables"])
+        self.assertIn("driver_outliers", context["table_pagination"])
+        self.assertEqual(context["table_pagination"]["driver_outliers"]["current_page"], 1)
         self.assertIn("cards", context["explanations"])
         self.assertIn("charts", context["explanations"])
         self.assertIn("tables", context["explanations"])
@@ -607,6 +647,78 @@ class DashboardAnalyticsTests(TestCase):
         self.assertEqual(context["tables"]["critical_routes"][0]["route"], "RT030")
         self.assertEqual(context["tables"]["critical_regions"][0]["region"], "SUL")
         self.assertEqual(context["tables"]["critical_frequencies"][0]["frequency"], "DIARIA")
+
+    def test_multi_select_filters_are_applied_to_queryset(self):
+        batch = self._create_batch()
+        self._create_record(
+            batch=batch,
+            row_number=1,
+            invoice_number="1001",
+            driver_name="BEATRIZ GOMES",
+            route="RT030",
+        )
+        self._create_record(
+            batch=batch,
+            row_number=2,
+            invoice_number="1002",
+            driver_name="ANA SILVA",
+            route="RT010",
+        )
+        self._create_record(
+            batch=batch,
+            row_number=3,
+            invoice_number="1003",
+            driver_name="CARLOS LIMA",
+            route="RT099",
+        )
+        query = QueryDict("", mutable=True)
+        query.setlist("driver_name", ["BEATRIZ GOMES", "ANA SILVA"])
+        query.setlist("route", ["RT030", "RT010"])
+
+        filters = DashboardFilters.from_querydict(query)
+        context = get_dashboard_context(filters, query)
+
+        self.assertEqual(filters.driver_name, ["BEATRIZ GOMES", "ANA SILVA"])
+        self.assertEqual(filters.route, ["RT030", "RT010"])
+        self.assertEqual(context["cards"]["total_records"], 2)
+        self.assertEqual(
+            {row["driver_name"] for row in context["tables"]["driver_outliers"]},
+            {"ANA SILVA", "BEATRIZ GOMES"},
+        )
+
+    def test_table_pagination_preserves_filter_querystring(self):
+        batch = self._create_batch()
+        for index, driver_name in enumerate(
+            [
+                "ANA SILVA",
+                "BEATRIZ GOMES",
+                "CARLOS LIMA",
+                "DANIEL ROCHA",
+                "ELISA MOURA",
+                "FERNANDO COSTA",
+            ],
+            start=1,
+        ):
+            self._create_record(
+                batch=batch,
+                row_number=index,
+                invoice_number=str(1000 + index),
+                driver_name=driver_name,
+                route="RT030" if index % 2 else "RT010",
+            )
+        query = QueryDict("", mutable=True)
+        query.setlist("route", ["RT030", "RT010"])
+        query["driver_outliers_page"] = "2"
+
+        context = get_dashboard_context(DashboardFilters.from_querydict(query), query)
+        pagination = context["table_pagination"]["driver_outliers"]
+
+        self.assertEqual(pagination["current_page"], 2)
+        self.assertEqual(pagination["total_items"], 6)
+        self.assertEqual(len(context["tables"]["driver_outliers"]), 1)
+        self.assertIn("route=RT030", pagination["previous_url"])
+        self.assertIn("route=RT010", pagination["previous_url"])
+        self.assertIn("driver_outliers_page=1", pagination["previous_url"])
 
     def test_chart_contracts_have_stable_json_shape(self):
         batch = self._create_batch()
