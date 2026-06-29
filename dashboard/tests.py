@@ -1,16 +1,19 @@
 import json
+from io import BytesIO
 from datetime import date, time
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+import openpyxl
 
 from accounts.services.rbac_service import LOGISTICA_ADMIN, LOGISTICA_VIEWER, setup_rbac
 from dashboard.services.dashboard_filters import DashboardFilters
 from dashboard.services.dashboard_queries import get_dashboard_context
+from dashboard.services.export_service import XLSX_CONTENT_TYPE
 from imports.models import ImportBatch, LeadTimeRecord
 
 
@@ -124,6 +127,220 @@ class DashboardViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, reverse("dashboard:home"))
+
+
+class DashboardExportTests(TestCase):
+    def setUp(self):
+        setup_rbac()
+        self.user = User.objects.create_user(
+            username="plain",
+            password="safe-test-password",
+        )
+        self.access_only_user = User.objects.create_user(
+            username="access-only",
+            password="safe-test-password",
+        )
+        self.viewer = User.objects.create_user(
+            username="viewer",
+            password="safe-test-password",
+        )
+        self.admin = User.objects.create_user(
+            username="admin",
+            password="safe-test-password",
+        )
+        self.access_only_user.user_permissions.add(Permission.objects.get(codename="access_dashboard"))
+        self.viewer.groups.add(Group.objects.get(name=LOGISTICA_VIEWER))
+        self.admin.groups.add(Group.objects.get(name=LOGISTICA_ADMIN))
+        self.export_url = reverse("dashboard:export_excel")
+
+    def test_anonymous_user_cannot_access_export(self):
+        response = self.client.get(self.export_url)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("accounts:login"), response["Location"])
+
+    def test_authenticated_user_without_export_permission_cannot_access_export(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.export_url)
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_user_with_must_change_password_is_redirected_before_exporting(self):
+        self.viewer.profile.must_change_password = True
+        self.viewer.profile.save(update_fields=["must_change_password"])
+        self.client.force_login(self.viewer)
+
+        response = self.client.get(self.export_url)
+
+        self.assertRedirects(response, reverse("accounts:force_password_change"))
+
+    def test_logistica_viewer_can_export_excel(self):
+        self.client.force_login(self.viewer)
+
+        response = self.client.get(self.export_url)
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_logistica_admin_can_export_excel(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.get(self.export_url)
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_export_response_has_xlsx_headers(self):
+        self.client.force_login(self.viewer)
+
+        response = self.client.get(self.export_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], XLSX_CONTENT_TYPE)
+        self.assertIn("attachment", response["Content-Disposition"])
+        self.assertIn("dashboard_lead_time_", response["Content-Disposition"])
+        self.assertIn(".xlsx", response["Content-Disposition"])
+
+    def test_export_generates_valid_workbook_without_data(self):
+        self.client.force_login(self.viewer)
+
+        response = self.client.get(self.export_url)
+        workbook = openpyxl.load_workbook(BytesIO(response.content))
+
+        self.assertIn("Dados filtrados", workbook.sheetnames)
+        worksheet = workbook["Dados filtrados"]
+        self.assertEqual(worksheet.max_row, 1)
+        self.assertEqual(worksheet["A1"].value, "Unidade de negocio")
+
+    def test_export_with_filters_returns_only_filtered_records(self):
+        batch = self._create_batch()
+        self._create_record(
+            batch=batch,
+            row_number=1,
+            invoice_number="1001",
+            driver_name="BEATRIZ GOMES",
+            route="RT030",
+            business_unit="TABACO",
+            delivery_status="ENTREGUE",
+            cargo_status="Ativa",
+            invoice_issue_date=date(2026, 5, 1),
+        )
+        self._create_record(
+            batch=batch,
+            row_number=2,
+            invoice_number="1002",
+            driver_name="ANA SILVA",
+            route="RT010",
+            business_unit="ALIMENTOS",
+            delivery_status="PENDENTE",
+            cargo_status="Cancelada",
+            invoice_issue_date=date(2026, 6, 1),
+        )
+        self.client.force_login(self.viewer)
+
+        response = self.client.get(
+            self.export_url,
+            {
+                "date_start": "2026-05-01",
+                "date_end": "2026-05-31",
+                "driver_name": "BEATRIZ GOMES",
+                "route": "RT030",
+                "business_unit": "TABACO",
+                "delivery_status": "ENTREGUE",
+                "cargo_status": "Ativa",
+            },
+        )
+        workbook = openpyxl.load_workbook(BytesIO(response.content))
+        worksheet = workbook["Dados filtrados"]
+
+        self.assertEqual(worksheet.max_row, 2)
+        self.assertEqual(worksheet["H2"].value, "1001")
+        self.assertEqual(worksheet["D2"].value, "BEATRIZ GOMES")
+        self.assertEqual(worksheet["E2"].value, "RT030")
+
+    def test_export_button_is_visible_for_user_with_permission(self):
+        self.client.force_login(self.viewer)
+
+        response = self.client.get(reverse("dashboard:home"), {"route": "RT030"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Exportar Excel")
+        self.assertContains(response, f"{self.export_url}?route=RT030")
+
+    def test_export_button_is_hidden_for_user_without_export_permission(self):
+        self.client.force_login(self.access_only_user)
+
+        response = self.client.get(reverse("dashboard:home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Exportar Excel")
+
+    def _create_batch(self, status=ImportBatch.Status.SUCCESS, file_hash="export-file-hash"):
+        now = timezone.now()
+        return ImportBatch.objects.create(
+            source_mode=ImportBatch.SourceMode.LOCAL,
+            file_name=f"{file_hash}.xlsx",
+            file_path="data/test.xlsx",
+            file_hash=file_hash,
+            sheet_name="COM 001",
+            status=status,
+            started_at=now,
+            finished_at=now if status == ImportBatch.Status.SUCCESS else None,
+            total_rows=1,
+            valid_rows=1 if status == ImportBatch.Status.SUCCESS else 0,
+            invalid_rows=0,
+        )
+
+    def _create_record(self, batch, row_number, invoice_number, **overrides):
+        defaults = {
+            "row_hash": f"export-row-hash-{row_number}",
+            "business_unit": "TABACO",
+            "map_date": date(2026, 5, 1),
+            "map_number": "470939",
+            "owner": "948 TAINARA CAMARGO MONTE",
+            "route": "RT030",
+            "delivery_points": 18,
+            "weight": Decimal("151.670"),
+            "volume": Decimal("0.640"),
+            "map_value": Decimal("375.10"),
+            "vehicle_plate": "AZP8G94",
+            "driver_code": "395",
+            "driver_name": "BEATRIZ GOMES",
+            "checker_code": "",
+            "checker_name": "",
+            "load_status_description": "CARREGADO EM",
+            "load_date": date(2026, 5, 5),
+            "invoice_series": "11",
+            "invoice_issue_date": date(2026, 5, 4),
+            "bordero_number": "807679",
+            "customer_code": "6248888",
+            "customer_name": "CLIENTE TESTE LTDA",
+            "city": "PONTA GROSSA",
+            "invoice_value": Decimal("1674.40"),
+            "invoice_status": "AZP8G94",
+            "cargo_status": "Ativa",
+            "auxiliary_date": None,
+            "delivery_status": "ENTREGUE",
+            "customer_delivery_date": date(2026, 5, 5),
+            "customer_delivery_time": time(16, 12),
+            "customer_delivery_datetime": timezone.now(),
+            "exported_to": "UMOV",
+            "notes": "",
+            "seller_code": "681",
+            "team_code": "1",
+            "operational_lead_time_hours": Decimal("10.00"),
+            "carrier_lead_time_hours": Decimal("5.00"),
+            "is_operational_late": False,
+            "is_carrier_late": False,
+            "business_days_count": 1,
+        }
+        defaults.update(overrides)
+
+        return LeadTimeRecord.objects.create(
+            import_batch=batch,
+            row_number=row_number,
+            invoice_number=invoice_number,
+            **defaults,
+        )
 
 
 class DashboardAnalyticsTests(TestCase):
