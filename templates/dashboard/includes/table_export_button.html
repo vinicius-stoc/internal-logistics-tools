@@ -1,0 +1,9 @@
+{% if request.user.is_superuser or perms.accounts.export_dashboard %}
+  <a
+    class="btn btn-sm btn-outline-success text-nowrap"
+    href="{% url 'dashboard:export_excel' %}?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}table={{ table_key }}"
+    data-loading-text="Gerando arquivo..."
+  >
+    Exportar Excel
+  </a>
+{% endif %}

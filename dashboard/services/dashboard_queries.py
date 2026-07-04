@@ -25,7 +25,11 @@ TOP_GROUP_LIMIT = 10
 TABLE_PAGE_SIZE = 5
 
 
-def get_dashboard_context(filters: Optional[DashboardFilters] = None, querydict=None):
+def get_dashboard_context(
+    filters: Optional[DashboardFilters] = None,
+    querydict=None,
+    paginate_tables=True,
+):
     filters = filters or DashboardFilters()
     base_queryset = LeadTimeRecord.objects.select_related("import_batch")
     filtered_queryset = filters.apply_to_queryset(base_queryset)
@@ -78,7 +82,11 @@ def get_dashboard_context(filters: Optional[DashboardFilters] = None, querydict=
             "commercial_pressure_summary"
         ],
     }
-    tables, table_pagination = _paginate_tables(raw_tables, querydict)
+    if paginate_tables:
+        tables, table_pagination = _paginate_tables(raw_tables, querydict)
+    else:
+        tables = raw_tables
+        table_pagination = {}
 
     return {
         "filters": filters.as_dict(),

@@ -266,7 +266,10 @@
   <div class="dashboard-table-block">
     <div class="d-flex justify-content-between gap-2">
       <h3 class="h6">Pressão comercial</h3>
-      <button class="dashboard-info-button" type="button" data-help-key="tables.commercial_pressure_summary" aria-label="Explicação da análise">?</button>
+      <div class="d-flex align-items-center gap-2">
+        {% include "dashboard/includes/table_export_button.html" with table_key="commercial_pressure_summary" %}
+        <button class="dashboard-info-button" type="button" data-help-key="tables.commercial_pressure_summary" aria-label="Explicação da análise">?</button>
+      </div>
     </div>
     <p class="text-muted small mb-3">
       Análise da demanda criada pelo faturamento e do impacto nos prazos da logística.
@@ -401,7 +404,10 @@
   <div class="dashboard-table-block mb-3">
     <div class="d-flex justify-content-between gap-2">
       <h3 class="h6">Motoristas fora da curva</h3>
-      <button class="dashboard-info-button" type="button" data-help-key="tables.driver_outliers" aria-label="Explicação da tabela">?</button>
+      <div class="d-flex align-items-center gap-2">
+        {% include "dashboard/includes/table_export_button.html" with table_key="driver_outliers" %}
+        <button class="dashboard-info-button" type="button" data-help-key="tables.driver_outliers" aria-label="Explicação da tabela">?</button>
+      </div>
     </div>
     <div class="table-responsive">
       <table class="table table-sm align-middle">
@@ -451,7 +457,10 @@
   <div class="dashboard-table-block">
     <div class="d-flex justify-content-between gap-2">
       <h3 class="h6">Notas fiscais fora da curva</h3>
-      <button class="dashboard-info-button" type="button" data-help-key="tables.invoice_outliers" aria-label="Explicação da tabela">?</button>
+      <div class="d-flex align-items-center gap-2">
+        {% include "dashboard/includes/table_export_button.html" with table_key="invoice_outliers" %}
+        <button class="dashboard-info-button" type="button" data-help-key="tables.invoice_outliers" aria-label="Explicação da tabela">?</button>
+      </div>
     </div>
     <div class="table-responsive">
       <table class="table table-sm align-middle">
@@ -585,7 +594,10 @@
   <div class="dashboard-table-block">
     <div class="d-flex justify-content-between gap-2">
       <h3 class="h6">Divergências de status</h3>
-      <button class="dashboard-info-button" type="button" data-help-key="tables.status_inconsistencies" aria-label="Explicação da tabela">?</button>
+      <div class="d-flex align-items-center gap-2">
+        {% include "dashboard/includes/table_export_button.html" with table_key="status_inconsistencies" %}
+        <button class="dashboard-info-button" type="button" data-help-key="tables.status_inconsistencies" aria-label="Explicação da tabela">?</button>
+      </div>
     </div>
     <div class="table-responsive">
       <table class="table table-sm align-middle">
@@ -715,7 +727,10 @@
   <div class="dashboard-table-block mb-3">
     <div class="d-flex justify-content-between gap-2">
       <h3 class="h6">Rotas críticas</h3>
-      <button class="dashboard-info-button" type="button" data-help-key="tables.critical_routes" aria-label="Explicação da tabela">?</button>
+      <div class="d-flex align-items-center gap-2">
+        {% include "dashboard/includes/table_export_button.html" with table_key="critical_routes" %}
+        <button class="dashboard-info-button" type="button" data-help-key="tables.critical_routes" aria-label="Explicação da tabela">?</button>
+      </div>
     </div>
     <div class="table-responsive">
       <table class="table table-sm align-middle">
@@ -767,7 +782,10 @@
       <div class="dashboard-table-block h-100">
         <div class="d-flex justify-content-between gap-2">
           <h3 class="h6">Cidades críticas</h3>
-          <button class="dashboard-info-button" type="button" data-help-key="tables.critical_cities" aria-label="Explicação da tabela">?</button>
+          <div class="d-flex align-items-center gap-2">
+            {% include "dashboard/includes/table_export_button.html" with table_key="critical_cities" %}
+            <button class="dashboard-info-button" type="button" data-help-key="tables.critical_cities" aria-label="Explicação da tabela">?</button>
+          </div>
         </div>
         <div class="table-responsive">
           <table class="table table-sm align-middle">
@@ -816,7 +834,10 @@
       <div class="dashboard-table-block h-100">
         <div class="d-flex justify-content-between gap-2">
           <h3 class="h6">Regiões críticas</h3>
-          <button class="dashboard-info-button" type="button" data-help-key="tables.critical_regions" aria-label="Explicação da tabela">?</button>
+          <div class="d-flex align-items-center gap-2">
+            {% include "dashboard/includes/table_export_button.html" with table_key="critical_regions" %}
+            <button class="dashboard-info-button" type="button" data-help-key="tables.critical_regions" aria-label="Explicação da tabela">?</button>
+          </div>
         </div>
         <div class="table-responsive">
           <table class="table table-sm align-middle">
@@ -863,7 +884,10 @@
       <div class="dashboard-table-block h-100">
         <div class="d-flex justify-content-between gap-2">
           <h3 class="h6">Frequências críticas</h3>
-          <button class="dashboard-info-button" type="button" data-help-key="tables.critical_frequencies" aria-label="Explicação da tabela">?</button>
+          <div class="d-flex align-items-center gap-2">
+            {% include "dashboard/includes/table_export_button.html" with table_key="critical_frequencies" %}
+            <button class="dashboard-info-button" type="button" data-help-key="tables.critical_frequencies" aria-label="Explicação da tabela">?</button>
+          </div>
         </div>
         <div class="table-responsive">
           <table class="table table-sm align-middle">
