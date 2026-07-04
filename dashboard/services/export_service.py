@@ -12,10 +12,151 @@ from openpyxl.utils import get_column_letter
 from imports.models import LeadTimeRecord
 
 from .dashboard_filters import DashboardFilters
+from .dashboard_queries import get_dashboard_context
 
 
 XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 DELIVERED_STATUS_LOOKUP = Q(delivery_status__icontains="entreg")
+
+TABLE_EXPORTS = {
+    "commercial_pressure_summary": {
+        "sheet_title": "Pressao comercial",
+        "file_suffix": "pressao_comercial",
+        "columns": [
+            ("Periodo", "period", None),
+            ("Dias", "issue_days", "integer"),
+            ("Registros", "records", "integer"),
+            ("Participacao", "records_share", "decimal"),
+            ("Media diaria", "daily_average_records", "decimal"),
+            ("Valor NF", "total_invoice_value", "currency"),
+            ("Atraso operacional", "operational_late_percentage", "decimal"),
+            ("Atraso transportadora", "carrier_late_percentage", "decimal"),
+            ("LT operacional medio (h)", "average_operational_lead_time_hours", "decimal"),
+            ("P90 operacional (h)", "operational_lead_time_p90_hours", "decimal"),
+            ("Severidade atraso (h)", "delay_severity_hours", "decimal"),
+        ],
+    },
+    "driver_outliers": {
+        "sheet_title": "Motoristas fora da curva",
+        "file_suffix": "motoristas_fora_da_curva",
+        "columns": [
+            ("Motorista", "driver_name", None),
+            ("Registros", "total_records", "integer"),
+            ("Entregues", "delivered_records", "integer"),
+            ("Atrasados", "delayed_records", "integer"),
+            ("Valor NF", "total_invoice_value", "currency"),
+            ("Severidade atraso (h)", "delay_severity_hours", "decimal"),
+            ("LT operacional medio (h)", "average_operational_lead_time_hours", "decimal"),
+            ("P90 operacional (h)", "operational_lead_time_p90_hours", "decimal"),
+            ("LT transportadora medio (h)", "average_carrier_lead_time_hours", "decimal"),
+            ("Atraso operacional", "operational_late_percentage", "decimal"),
+            ("Atraso transportadora", "carrier_late_percentage", "decimal"),
+            ("Score", "criticality_score", "decimal"),
+        ],
+    },
+    "invoice_outliers": {
+        "sheet_title": "Notas fora da curva",
+        "file_suffix": "notas_fora_da_curva",
+        "columns": [
+            ("NF", "invoice_number", None),
+            ("Serie", "invoice_series", None),
+            ("Motorista", "driver_name", None),
+            ("Pauta/Rota", "route", None),
+            ("Cidade", "city", None),
+            ("Valor NF", "invoice_value", "currency"),
+            ("Emissao", "invoice_issue_date", None),
+            ("Entrega", "customer_delivery_date", None),
+            ("LT operacional (h)", "operational_lead_time_hours", "decimal"),
+            ("LT transportadora (h)", "carrier_lead_time_hours", "decimal"),
+            ("Status carga", "cargo_status", None),
+            ("Status entrega", "delivery_status", None),
+        ],
+    },
+    "status_inconsistencies": {
+        "sheet_title": "Divergencias de status",
+        "file_suffix": "divergencias_status",
+        "columns": [
+            ("NF", "invoice_number", None),
+            ("Serie", "invoice_series", None),
+            ("Motorista", "driver_name", None),
+            ("Pauta/Rota", "route", None),
+            ("Cidade", "city", None),
+            ("Emissao", "invoice_issue_date", None),
+            ("Entrega", "customer_delivery_date", None),
+            ("Status carga", "cargo_status", None),
+            ("Status entrega", "delivery_status", None),
+            ("LT operacional (h)", "operational_lead_time_hours", "decimal"),
+            ("LT transportadora (h)", "carrier_lead_time_hours", "decimal"),
+        ],
+    },
+    "critical_routes": {
+        "sheet_title": "Rotas criticas",
+        "file_suffix": "rotas_criticas",
+        "columns": [
+            ("Pauta/Rota", "route", None),
+            ("Registros", "total_records", "integer"),
+            ("Entregues", "delivered_records", "integer"),
+            ("Atrasados", "delayed_records", "integer"),
+            ("Cidades atendidas", "served_cities", "integer"),
+            ("Valor NF", "total_invoice_value", "currency"),
+            ("Severidade atraso (h)", "delay_severity_hours", "decimal"),
+            ("LT operacional medio (h)", "average_operational_lead_time_hours", "decimal"),
+            ("P90 operacional (h)", "operational_lead_time_p90_hours", "decimal"),
+            ("Atraso operacional", "operational_late_percentage", "decimal"),
+            ("Atraso transportadora", "carrier_late_percentage", "decimal"),
+            ("Score", "criticality_score", "decimal"),
+        ],
+    },
+    "critical_cities": {
+        "sheet_title": "Cidades criticas",
+        "file_suffix": "cidades_criticas",
+        "columns": [
+            ("Cidade", "city", None),
+            ("Registros", "total_records", "integer"),
+            ("Rotas", "routes", "integer"),
+            ("Atrasados", "delayed_records", "integer"),
+            ("Valor NF", "total_invoice_value", "currency"),
+            ("LT operacional medio (h)", "average_operational_lead_time_hours", "decimal"),
+            ("LT transportadora medio (h)", "average_carrier_lead_time_hours", "decimal"),
+            ("Severidade atraso (h)", "delay_severity_hours", "decimal"),
+            ("Atraso operacional", "operational_late_percentage", "decimal"),
+            ("Atraso transportadora", "carrier_late_percentage", "decimal"),
+            ("Score", "criticality_score", "decimal"),
+        ],
+    },
+    "critical_regions": {
+        "sheet_title": "Regioes criticas",
+        "file_suffix": "regioes_criticas",
+        "columns": [
+            ("Regiao", "region", None),
+            ("Registros", "total_records", "integer"),
+            ("Atrasados", "delayed_records", "integer"),
+            ("Valor NF", "total_invoice_value", "currency"),
+            ("LT operacional medio (h)", "average_operational_lead_time_hours", "decimal"),
+            ("LT transportadora medio (h)", "average_carrier_lead_time_hours", "decimal"),
+            ("Severidade atraso (h)", "delay_severity_hours", "decimal"),
+            ("Atraso operacional", "operational_late_percentage", "decimal"),
+            ("Atraso transportadora", "carrier_late_percentage", "decimal"),
+            ("Score", "criticality_score", "decimal"),
+        ],
+    },
+    "critical_frequencies": {
+        "sheet_title": "Frequencias criticas",
+        "file_suffix": "frequencias_criticas",
+        "columns": [
+            ("Frequencia", "frequency", None),
+            ("Registros", "total_records", "integer"),
+            ("Atrasados", "delayed_records", "integer"),
+            ("Valor NF", "total_invoice_value", "currency"),
+            ("LT operacional medio (h)", "average_operational_lead_time_hours", "decimal"),
+            ("LT transportadora medio (h)", "average_carrier_lead_time_hours", "decimal"),
+            ("Severidade atraso (h)", "delay_severity_hours", "decimal"),
+            ("Atraso operacional", "operational_late_percentage", "decimal"),
+            ("Atraso transportadora", "carrier_late_percentage", "decimal"),
+            ("Score", "criticality_score", "decimal"),
+        ],
+    },
+}
 
 
 @dataclass(frozen=True)
@@ -29,8 +170,11 @@ class DashboardExportError(Exception):
     pass
 
 
-def build_dashboard_export(filters: DashboardFilters) -> DashboardExportResult:
+def build_dashboard_export(filters: DashboardFilters, table_key=None) -> DashboardExportResult:
     try:
+        if table_key:
+            return _build_table_export(filters, table_key)
+
         queryset = _get_filtered_queryset(filters)
         workbook = Workbook()
 
@@ -51,6 +195,41 @@ def build_dashboard_export(filters: DashboardFilters) -> DashboardExportResult:
         )
     except Exception as exc:
         raise DashboardExportError("Não foi possível gerar a exportação Excel.") from exc
+
+
+def _build_table_export(filters, table_key):
+    table_config = TABLE_EXPORTS.get(table_key)
+    if not table_config:
+        raise DashboardExportError("Tabela inválida para exportação Excel.")
+
+    context = get_dashboard_context(filters, paginate_tables=False)
+    rows = context["tables"].get(table_key, [])
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = table_config["sheet_title"]
+    _fill_table_sheet(worksheet, rows, table_config["columns"])
+
+    output = BytesIO()
+    workbook.save(output)
+
+    return DashboardExportResult(
+        file_name=_make_file_name(table_config["file_suffix"]),
+        content=output.getvalue(),
+    )
+
+
+def _fill_table_sheet(worksheet, rows, columns):
+    worksheet.append([column[0] for column in columns])
+
+    for row in rows:
+        worksheet.append(
+            [
+                _format_table_value(row.get(field_name), value_type)
+                for _, field_name, value_type in columns
+            ]
+        )
+
+    _format_worksheet(worksheet, columns)
 
 
 def _get_filtered_queryset(filters):
@@ -188,6 +367,16 @@ def _format_cell_value(value, value_type):
     return value
 
 
+def _format_table_value(value, value_type):
+    if value is None:
+        return ""
+    if value_type in {"currency", "decimal"}:
+        return _decimal_to_number(Decimal(str(value)))
+    if value_type == "integer":
+        return int(value)
+    return value
+
+
 def _decimal_to_number(value):
     if value is None:
         return ""
@@ -225,6 +414,7 @@ def _format_worksheet(worksheet, columns):
         worksheet.column_dimensions[column_letter].width = min(max(max_length + 2, 12), 45)
 
 
-def _make_file_name():
+def _make_file_name(suffix=None):
     timestamp = timezone.localtime().strftime("%Y%m%d_%H%M%S")
-    return f"dashboard_lead_time_{timestamp}.xlsx"
+    suffix_part = f"_{suffix}" if suffix else ""
+    return f"dashboard_lead_time{suffix_part}_{timestamp}.xlsx"

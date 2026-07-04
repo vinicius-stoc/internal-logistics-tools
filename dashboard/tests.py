@@ -318,6 +318,41 @@ class DashboardExportTests(TestCase):
         self.assertEqual(worksheet.max_row, 3)
         self.assertEqual({worksheet["J2"].value, worksheet["J3"].value}, {"1001", "1002"})
 
+    def test_table_export_returns_selected_dashboard_table(self):
+        batch = self._create_batch()
+        self._create_record(
+            batch=batch,
+            row_number=1,
+            invoice_number="1001",
+            route="RT030",
+            delivery_status="ENTREGUE",
+        )
+        self._create_record(
+            batch=batch,
+            row_number=2,
+            invoice_number="1002",
+            route="RT010",
+        )
+        self.client.force_login(self.viewer)
+
+        response = self.client.get(
+            self.export_url,
+            {
+                "table": "critical_routes",
+                "route": "RT030",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+
+        workbook = openpyxl.load_workbook(BytesIO(response.content))
+        worksheet = workbook["Rotas criticas"]
+
+        self.assertIn("dashboard_lead_time_rotas_criticas_", response["Content-Disposition"])
+        self.assertEqual(workbook.sheetnames, ["Rotas criticas"])
+        self.assertEqual(worksheet["A1"].value, "Pauta/Rota")
+        self.assertEqual(worksheet["A2"].value, "RT030")
+        self.assertEqual(worksheet["B2"].value, 1)
+
     def test_export_button_is_visible_for_user_with_permission(self):
         self.client.force_login(self.viewer)
 
@@ -326,6 +361,8 @@ class DashboardExportTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Exportar Excel")
         self.assertContains(response, f"{self.export_url}?route=RT030")
+        self.assertContains(response, f"{self.export_url}?route=RT030&table=driver_outliers")
+        self.assertContains(response, f"{self.export_url}?route=RT030&table=critical_routes")
 
     def test_export_button_is_hidden_for_user_without_export_permission(self):
         self.client.force_login(self.access_only_user)

@@ -25,9 +25,10 @@ def dashboard_home(request):
 @permission_required("accounts.export_dashboard", raise_exception=True)
 def export_dashboard_excel(request):
     filters = DashboardFilters.from_querydict(request.GET)
+    table_key = request.GET.get("table") or None
 
     try:
-        export_result = build_dashboard_export(filters)
+        export_result = build_dashboard_export(filters, table_key=table_key)
     except DashboardExportError:
         messages.error(
             request,

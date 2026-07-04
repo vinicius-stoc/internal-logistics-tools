@@ -73,11 +73,11 @@
 
     if (metadata && (metadata.route || metadata.region || metadata.frequency)) {
       const label = metadata.route || metadata.region || metadata.frequency;
-      const lines = [
-        label,
-        `Registros: ${metadata.total_records || 0}`,
-      ];
+      const lines = [label];
 
+      if (metadata.total_records !== undefined) {
+        lines.push(`Registros: ${metadata.total_records}`);
+      }
       if (metadata.delayed_records !== undefined) {
         lines.push(`Atrasados: ${metadata.delayed_records}`);
       }
