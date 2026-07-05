@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load account_labels %}
 
 {% block title %}Usuários | Logística Interna{% endblock %}
 {% block topbar_title %}Gestão de Usuários{% endblock %}
@@ -41,7 +42,7 @@
           </td>
           <td>
             {% for group in user_item.groups.all %}
-              {% include "core/partials/status_badge.html" with variant="neutral" label=group.name %}
+              {% include "core/partials/status_badge.html" with variant="neutral" label=group.name|group_display_name %}
             {% empty %}
               <span class="text-muted">Sem grupo</span>
             {% endfor %}

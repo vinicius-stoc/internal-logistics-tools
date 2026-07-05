@@ -28,6 +28,10 @@
       return;
     }
 
+    if (element.tagName === "FORM" && element.dataset.confirmed === "true") {
+      return;
+    }
+
     const title = element.getAttribute("data-confirm-title");
     const text = element.getAttribute("data-confirm-text");
 
@@ -36,6 +40,7 @@
     }
 
     event.preventDefault();
+    const submitter = event.submitter || null;
 
     window.Swal.fire({
       title: title,
@@ -51,6 +56,15 @@
       }
 
       if (element.tagName === "FORM") {
+        element.dataset.confirmed = "true";
+        if (typeof element.requestSubmit === "function") {
+          if (submitter) {
+            element.requestSubmit(submitter);
+            return;
+          }
+          element.requestSubmit();
+          return;
+        }
         element.submit();
         return;
       }

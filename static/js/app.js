@@ -29,6 +29,10 @@
   document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll("form").forEach(function (form) {
       form.addEventListener("submit", function (event) {
+        if (form.hasAttribute("data-confirm-title") && form.dataset.confirmed !== "true") {
+          return;
+        }
+
         if (form.dataset.submitted === "true") {
           event.preventDefault();
           return;
