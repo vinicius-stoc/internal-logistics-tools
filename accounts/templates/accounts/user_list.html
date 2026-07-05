@@ -1,25 +1,32 @@
 {% extends "base.html" %}
 
 {% block title %}Usuários | Logística Interna{% endblock %}
+{% block topbar_title %}Gestão de Usuários{% endblock %}
+{% block topbar_meta %}
+  <span>Administração de acessos</span>
+  {% if request.user.is_authenticated %}
+    <span>Usuário: {{ request.user.get_username }}</span>
+  {% endif %}
+{% endblock %}
 
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
   <div>
-    <h1 class="h3 mb-1">Usuários</h1>
-    <p class="text-muted mb-0">Administração interna de acessos.</p>
+    <h1 class="h3 fw-bold mb-1">Gestão de Usuários</h1>
+    <p class="text-muted mb-0">Controle interno de usuários, grupos e status de acesso.</p>
   </div>
-  <a class="btn btn-primary" href="{% url 'accounts:user_create' %}">Criar usuário</a>
+  <a class="btn btn-brand-primary" href="{% url 'accounts:user_create' %}">Criar usuário</a>
 </div>
 
-<div class="table-responsive border rounded">
-  <table class="table table-sm align-middle mb-0">
+<div class="table-responsive table-card p-0">
+  <table class="table table-sm table-striped align-middle mb-0">
     <thead>
       <tr>
-        <th>Usuário</th>
         <th>Nome</th>
-        <th>E-mail</th>
-        <th>Grupos</th>
+        <th>Usuário/E-mail</th>
+        <th>Grupo</th>
         <th>Status</th>
+        <th>Último acesso</th>
         <th>Troca de senha</th>
         <th class="text-end">Ações</th>
       </tr>
@@ -27,35 +34,44 @@
     <tbody>
       {% for user_item in users %}
         <tr>
-          <td>{{ user_item.username }}</td>
-          <td>{{ user_item.get_full_name|default:"-" }}</td>
-          <td>{{ user_item.email|default:"-" }}</td>
+          <td class="fw-semibold">{{ user_item.get_full_name|default:user_item.username }}</td>
+          <td>
+            <span class="d-block">{{ user_item.username }}</span>
+            <span class="text-muted small">{{ user_item.email|default:"E-mail não informado" }}</span>
+          </td>
           <td>
             {% for group in user_item.groups.all %}
-              <span class="badge text-bg-secondary">{{ group.name }}</span>
+              {% include "core/partials/status_badge.html" with variant="neutral" label=group.name %}
             {% empty %}
               <span class="text-muted">Sem grupo</span>
             {% endfor %}
           </td>
           <td>
             {% if user_item.is_active %}
-              <span class="badge text-bg-success">Ativo</span>
+              {% include "core/partials/status_badge.html" with variant="success" label="Ativo" %}
             {% else %}
-              <span class="badge text-bg-secondary">Inativo</span>
+              {% include "core/partials/status_badge.html" with variant="neutral" label="Inativo" %}
+            {% endif %}
+          </td>
+          <td>
+            {% if user_item.last_login %}
+              {{ user_item.last_login|date:"d/m/Y H:i" }}
+            {% else %}
+              <span class="text-muted">Sem acesso registrado</span>
             {% endif %}
           </td>
           <td>
             {% if user_item.profile.must_change_password %}
-              <span class="badge text-bg-warning">Obrigatória</span>
+              {% include "core/partials/status_badge.html" with variant="warning" label="Obrigatória" %}
             {% else %}
               <span class="text-muted">Não</span>
             {% endif %}
           </td>
           <td class="text-end">
             <div class="btn-group btn-group-sm" role="group">
-              <a class="btn btn-outline-primary" href="{% url 'accounts:user_edit' user_item.id %}">Editar</a>
-              <a class="btn btn-outline-secondary" href="{% url 'accounts:user_reset_password' user_item.id %}">Redefinir senha</a>
-              <a class="btn btn-outline-danger" href="{% url 'accounts:user_toggle_active' user_item.id %}">
+              <a class="btn btn-brand-ghost" href="{% url 'accounts:user_edit' user_item.id %}">Editar</a>
+              <a class="btn btn-brand-ghost" href="{% url 'accounts:user_reset_password' user_item.id %}">Redefinir senha</a>
+              <a class="btn btn-brand-ghost" href="{% url 'accounts:user_toggle_active' user_item.id %}">
                 {% if user_item.is_active %}Desativar{% else %}Ativar{% endif %}
               </a>
             </div>
@@ -63,7 +79,9 @@
         </tr>
       {% empty %}
         <tr>
-          <td colspan="7" class="text-muted">Nenhum usuário encontrado.</td>
+          <td colspan="7">
+            {% include "core/partials/empty_state.html" with title="Nenhum usuário encontrado." description="Crie o primeiro usuário operacional da plataforma." %}
+          </td>
         </tr>
       {% endfor %}
     </tbody>

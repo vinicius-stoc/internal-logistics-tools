@@ -3,6 +3,17 @@
 {% load display_format %}
 
 {% block title %}Dashboard | Logística Interna{% endblock %}
+{% block topbar_title %}Dashboard Logístico{% endblock %}
+{% block topbar_meta %}
+  {% if metadata.last_successful_import %}
+    <span>Última carga: {{ metadata.last_successful_import.file_name }}</span>
+  {% else %}
+    <span>Nenhuma carga de dados encontrada.</span>
+  {% endif %}
+  {% if request.user.is_authenticated %}
+    <span>Usuário: {{ request.user.get_username }}</span>
+  {% endif %}
+{% endblock %}
 
 {% block styles %}
   <link href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
@@ -11,19 +22,19 @@
 {% block content %}
 <div class="page-heading dashboard-heading">
   <div>
-    <h1>Dashboard</h1>
+    <h1>Dashboard Logístico</h1>
     <p>Indicadores gerenciais calculados a partir dos dados importados no banco.</p>
   </div>
   <div class="dashboard-import-status text-muted">
     {% if metadata.last_successful_import %}
-      Última importação válida: {{ metadata.last_successful_import.file_name }}
+      Última carga válida: {{ metadata.last_successful_import.file_name }}
     {% else %}
       Nenhuma carga de dados foi registrada ainda.
     {% endif %}
   </div>
 </div>
 
-<form class="border rounded p-3 mb-3 dashboard-filter-panel" method="get" data-auto-submit-filters="true">
+<form class="filter-bar mb-3 dashboard-filter-panel" method="get" data-auto-submit-filters="true">
   <div class="row g-3">
     <div class="col-md-3">
       <label class="form-label" for="date_start">Data inicial</label>
@@ -92,15 +103,34 @@
   </div>
 
   <div class="mt-3 d-flex flex-wrap gap-2">
-    <a class="btn btn-outline-secondary" href="{% url 'dashboard:home' %}" data-clear-filters="true">Limpar filtros</a>
+    <button class="btn btn-brand-primary" type="submit">Aplicar filtros</button>
+    <a class="btn btn-brand-ghost" href="{% url 'dashboard:home' %}" data-clear-filters="true">Limpar filtros</a>
     {% if request.user.is_superuser or perms.accounts.export_dashboard %}
       <a
-        class="btn btn-success"
+        class="btn btn-brand-secondary"
         href="{% url 'dashboard:export_excel' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
         data-loading-text="Gerando arquivo..."
+        data-feedback-message="Exportação iniciada."
+        data-feedback-level="info"
       >
         Exportar Excel
       </a>
+    {% endif %}
+  </div>
+
+  <div class="filter-summary" aria-label="Filtros aplicados">
+    <span>Filtros aplicados:</span>
+    {% if filters.date_start or filters.date_end or filters.driver_name or filters.route %}
+      {% if filters.date_start %}<span class="filter-chip">Início: {{ filters.date_start }}</span>{% endif %}
+      {% if filters.date_end %}<span class="filter-chip">Fim: {{ filters.date_end }}</span>{% endif %}
+      {% for driver in filters.driver_name %}
+        <span class="filter-chip">Motorista: {{ driver }}</span>
+      {% endfor %}
+      {% for route in filters.route %}
+        <span class="filter-chip">Pauta: {{ route }}</span>
+      {% endfor %}
+    {% else %}
+      <span class="filter-chip">Nenhum filtro aplicado</span>
     {% endif %}
   </div>
 </form>

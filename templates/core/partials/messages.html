@@ -1,0 +1,14 @@
+{% if messages %}
+  <div class="mb-3">
+    {% for message in messages %}
+      <div
+        class="alert alert-{{ message.tags|default:'info' }} mb-2"
+        role="alert"
+        data-alert-message="{{ message }}"
+        data-alert-level="{{ message.tags|default:'info' }}"
+      >
+        {{ message }}
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
