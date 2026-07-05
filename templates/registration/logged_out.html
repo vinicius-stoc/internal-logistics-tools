@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 
 {% block title %}Logout | Logística Interna{% endblock %}
+{% block topbar_title %}Sessão encerrada{% endblock %}
 
 {% block content %}
-<div class="page-heading">
+<div class="app-card">
   <h1>Sessão encerrada</h1>
   <p>O usuário saiu do sistema.</p>
-  <a class="btn btn-primary" href="{% url 'accounts:login' %}">Entrar novamente</a>
+  <a class="btn btn-brand-primary" href="{% url 'accounts:login' %}">Entrar novamente</a>
 </div>
 {% endblock %}

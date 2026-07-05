@@ -179,15 +179,19 @@
   }
 
   function applyVisualDefaults(chartConfig) {
+    const styles = window.getComputedStyle(document.documentElement);
+    const cssColor = function (name, fallback) {
+      return styles.getPropertyValue(name).trim() || fallback;
+    };
     const palette = [
-      "#0d6efd",
-      "#198754",
-      "#ffc107",
-      "#dc3545",
-      "#6f42c1",
-      "#20c997",
-      "#fd7e14",
-      "#6c757d",
+      cssColor("--color-info", "#0B5CAD"),
+      cssColor("--color-success", "#00843D"),
+      cssColor("--color-warning", "#F59E0B"),
+      cssColor("--color-danger", "#DC2626"),
+      cssColor("--color-brand-red", "#D71920"),
+      cssColor("--color-text-secondary", "#64748B"),
+      cssColor("--color-text-muted", "#94A3B8"),
+      cssColor("--color-graphite", "#1F1F1F"),
     ];
 
     chartConfig.data.datasets = chartConfig.data.datasets.map((dataset, index) => {
@@ -220,8 +224,8 @@
       if (datasetType === "bubble") {
         return Object.assign(
           {
-            backgroundColor: "rgba(13, 110, 253, 0.35)",
-            borderColor: "#0d6efd",
+            backgroundColor: "rgba(11, 92, 173, 0.28)",
+            borderColor: cssColor("--color-info", "#0B5CAD"),
             borderWidth: 1,
           },
           dataset

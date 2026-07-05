@@ -1,0 +1,48 @@
+<aside class="app-sidebar" aria-label="Navegação principal">
+  <div class="app-brand">
+    <span class="app-brand-mark">PL</span>
+    <span class="app-brand-title">
+      Pegoraro Logistics
+      <span class="app-brand-subtitle">Operação logística</span>
+    </span>
+  </div>
+
+  <nav class="app-sidebar-nav">
+    <a class="app-sidebar-link {% if request.resolver_match.app_name == 'core' %}active{% endif %}" href="{% url 'core:home' %}">
+      <span class="app-sidebar-icon">H</span>
+      <span>Home</span>
+    </a>
+    <a class="app-sidebar-link {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard:home' %}">
+      <span class="app-sidebar-icon">D</span>
+      <span>Dashboard</span>
+    </a>
+    <span class="app-sidebar-link disabled" aria-disabled="true">
+      <span class="app-sidebar-icon">I</span>
+      <span>Importações</span>
+    </span>
+    {% if request.user.is_superuser or perms.accounts.manage_internal_users %}
+      <a class="app-sidebar-link {% if request.resolver_match.app_name == 'accounts' and 'users' in request.path %}active{% endif %}" href="{% url 'accounts:user_list' %}">
+        <span class="app-sidebar-icon">U</span>
+        <span>Usuários</span>
+      </a>
+    {% endif %}
+  </nav>
+
+  <div class="app-sidebar-footer">
+    {% if request.user.is_authenticated %}
+      <div class="app-sidebar-user">{{ request.user.get_username }}</div>
+      <form action="{% url 'accounts:logout' %}" method="post">
+        {% csrf_token %}
+        <button class="app-sidebar-button" type="submit">
+          <span class="app-sidebar-icon">S</span>
+          <span>Sair</span>
+        </button>
+      </form>
+    {% else %}
+      <a class="app-sidebar-link" href="{% url 'accounts:login' %}">
+        <span class="app-sidebar-icon">E</span>
+        <span>Entrar</span>
+      </a>
+    {% endif %}
+  </div>
+</aside>

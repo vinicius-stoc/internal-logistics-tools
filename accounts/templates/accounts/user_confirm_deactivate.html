@@ -1,12 +1,13 @@
 {% extends "base.html" %}
 
 {% block title %}Alterar status | Logística Interna{% endblock %}
+{% block topbar_title %}Alterar status do usuário{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
   <div class="col-lg-6">
-    <h1 class="h3 mb-3">Alterar status do usuário</h1>
-    <div class="border rounded p-3">
+    <h1 class="h3 fw-bold mb-3">Alterar status do usuário</h1>
+    <div class="app-card">
       <p>
         Confirme a alteração de status para <strong>{{ target_user.username }}</strong>.
       </p>
@@ -14,12 +15,17 @@
         Status atual:
         {% if target_user.is_active %}ativo{% else %}inativo{% endif %}.
       </p>
-      <form method="post">
+      <form
+        method="post"
+        data-confirm-title="Confirmar alteração de status?"
+        data-confirm-text="Esta ação altera o acesso do usuário à plataforma."
+        data-confirm-button="{% if target_user.is_active %}Desativar{% else %}Ativar{% endif %}"
+      >
         {% csrf_token %}
-        <button class="btn btn-danger" type="submit">
+        <button class="btn btn-brand-danger" type="submit">
           {% if target_user.is_active %}Desativar{% else %}Ativar{% endif %}
         </button>
-        <a class="btn btn-outline-secondary" href="{% url 'accounts:user_list' %}">Cancelar</a>
+        <a class="btn btn-brand-ghost" href="{% url 'accounts:user_list' %}">Cancelar</a>
       </form>
     </div>
   </div>

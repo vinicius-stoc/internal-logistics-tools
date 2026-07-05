@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block title %}Acesso negado | Logística Interna{% endblock %}
+{% block topbar_title %}Acesso negado{% endblock %}
+
+{% block content %}
+<section class="app-card">
+  {% include "core/partials/empty_state.html" with title="Você não tem permissão para acessar esta área." description="Solicite a liberação ao administrador da plataforma logística." %}
+</section>
+{% endblock %}
