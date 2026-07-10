@@ -27,7 +27,7 @@ def env_list(name, default=None):
 ENVIRONMENT = os.getenv("ENVIRONMENT", "local")
 SECRET_KEY = os.getenv("SECRET_KEY", "unsafe-local-development-key-change-me")
 DEBUG = env_bool("DEBUG", default=ENVIRONMENT == "local")
-ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", default=["127.0.0.1", "localhost"])
+ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", default=["127.0.0.1", "localhost", "internal-logistics-tools.onrender.com"])
 
 
 INSTALLED_APPS = [
