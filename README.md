@@ -1,6 +1,6 @@
 # Plataforma Interna de Logistica
 
-Monolito Django para acompanhamento gerencial de dados logisticos importados de planilha Excel e, futuramente, de origem SFTP.
+Monolito Django para acompanhamento gerencial de dados logisticos importados de origem SFTP.
 
 ## Arquitetura
 
