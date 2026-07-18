@@ -26,9 +26,47 @@
     element.removeAttribute("data-original-text");
   }
 
+  function initializeSidebarToggle() {
+    const appShell = document.querySelector(".app-shell");
+    const toggle = document.querySelector(".app-sidebar-toggle");
+
+    if (!appShell || !toggle) {
+      return;
+    }
+
+    const desktopMedia = window.matchMedia("(min-width: 992px)");
+    const storageKey = "sidebar-collapsed";
+    let collapsed = window.localStorage.getItem(storageKey) === "true";
+
+    function renderSidebarState() {
+      const isCollapsed = desktopMedia.matches && collapsed;
+      const actionLabel = isCollapsed ? "Expandir menu lateral" : "Recolher menu lateral";
+
+      appShell.classList.toggle("sidebar-collapsed", isCollapsed);
+      toggle.setAttribute("aria-expanded", String(!isCollapsed));
+      toggle.setAttribute("aria-label", actionLabel);
+      toggle.setAttribute("title", actionLabel);
+    }
+
+    toggle.addEventListener("click", function () {
+      collapsed = !collapsed;
+      window.localStorage.setItem(storageKey, String(collapsed));
+      renderSidebarState();
+    });
+
+    desktopMedia.addEventListener("change", renderSidebarState);
+    renderSidebarState();
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
+    initializeSidebarToggle();
+
     document.querySelectorAll("form").forEach(function (form) {
       form.addEventListener("submit", function (event) {
+        if (form.hasAttribute("data-confirm-title") && form.dataset.confirmed !== "true") {
+          return;
+        }
+
         if (form.dataset.submitted === "true") {
           event.preventDefault();
           return;

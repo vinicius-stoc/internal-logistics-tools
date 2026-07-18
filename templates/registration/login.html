@@ -1,26 +1,32 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Login | Logística Interna{% endblock %}
+{% block title %}Acesso | Logística Interna{% endblock %}
 {% block body_class %}auth-page{% endblock %}
 
 {% block app_shell %}
-<main class="auth-shell">
-  <section class="auth-card app-card">
-    <div class="mb-4">
-      <div class="d-flex align-items-center gap-2 mb-3">
-        <span class="app-brand-mark">PL</span>
+<main class="auth-split-shell">
+  <section class="auth-hero" aria-label="Operação logística Pegoraro">
+    <div class="auth-hero-content">
+      <img class="auth-hero-logo" src="{% static 'img/brand/logo-symbol.png' %}" alt="">
+    </div>
+  </section>
+
+  <section class="auth-panel" aria-label="Acesso à plataforma">
+    <div class="auth-panel-card">
+      <div class="auth-panel-brand">
+        <img class="auth-panel-logo" src="{% static 'img/brand/logo-symbol.png' %}" alt="Pegoraro Logistics">
         <div>
-          <strong class="d-block">Pegoraro Logistics</strong>
-          <span class="text-muted small">Plataforma interna de logística</span>
+          <strong>Deycon Logística</strong>
+          <span>Plataforma interna de logística</span>
         </div>
       </div>
-      <h1 class="h4 fw-bold mb-1">Acesso à Plataforma Logística</h1>
-      <p class="text-muted mb-0">Entre com seu usuário corporativo para continuar.</p>
-    </div>
 
-    {% include "core/partials/messages.html" %}
+      <h2>Acesso à Plataforma Logística</h2>
+      <p class="auth-panel-copy">Entre com seu usuário corporativo para continuar.</p>
 
-    <div>
+      {% include "core/partials/messages.html" %}
+
       <form method="post">
         {% csrf_token %}
         {% if next %}

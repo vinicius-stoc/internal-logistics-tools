@@ -5,6 +5,7 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
+from accounts.services.access_label_service import get_group_display_name
 from accounts.services.rbac_service import GROUP_PERMISSIONS
 
 
@@ -44,6 +45,9 @@ class InternalUserCreateForm(BootstrapFormMixin, forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["groups"].queryset = allowed_groups_queryset()
+        self.fields["groups"].label_from_instance = (
+            lambda group: get_group_display_name(group.name)
+        )
         self.apply_bootstrap_classes()
 
     def clean_username(self):
@@ -90,6 +94,9 @@ class InternalUserEditForm(BootstrapFormMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["groups"].queryset = allowed_groups_queryset()
+        self.fields["groups"].label_from_instance = (
+            lambda group: get_group_display_name(group.name)
+        )
         self.fields["groups"].initial = self.instance.groups.filter(
             name__in=GROUP_PERMISSIONS.keys()
         )

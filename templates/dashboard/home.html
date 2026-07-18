@@ -23,7 +23,7 @@
 <div class="page-heading dashboard-heading">
   <div>
     <h1>Dashboard Logístico</h1>
-    <p>Indicadores gerenciais calculados a partir dos dados importados no banco.</p>
+    <p>Indicadores gerenciais calculados a partir das cargas de dados disponíveis.</p>
   </div>
   <div class="dashboard-import-status text-muted">
     {% if metadata.last_successful_import %}
@@ -34,7 +34,7 @@
   </div>
 </div>
 
-<form class="filter-bar mb-3 dashboard-filter-panel" method="get" data-auto-submit-filters="true">
+<form class="filter-bar mb-3 dashboard-filter-panel" method="get">
   <div class="row g-3">
     <div class="col-md-3">
       <label class="form-label" for="date_start">Data inicial</label>

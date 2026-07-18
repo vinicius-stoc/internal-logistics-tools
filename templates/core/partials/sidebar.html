@@ -1,29 +1,57 @@
-<aside class="app-sidebar" aria-label="Navegação principal">
+{% load static %}
+<aside id="app-sidebar" class="app-sidebar" aria-label="Navegação principal">
+  <button
+    class="app-sidebar-toggle"
+    type="button"
+    aria-controls="app-sidebar"
+    aria-expanded="true"
+    aria-label="Recolher menu lateral"
+    title="Recolher menu lateral"
+  >
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M4 6h16M4 12h16M4 18h16"></path>
+    </svg>
+  </button>
+
   <div class="app-brand">
-    <span class="app-brand-mark">PL</span>
+    <span class="app-brand-logo-wrap">
+      <img
+        class="app-brand-logo"
+        src="{% static 'img/brand/logo-symbol.png' %}"
+        alt="Pegoraro Logistics"
+      >
+    </span>
     <span class="app-brand-title">
-      Pegoraro Logistics
+      Deycon Logística
       <span class="app-brand-subtitle">Operação logística</span>
     </span>
   </div>
 
   <nav class="app-sidebar-nav">
-    <a class="app-sidebar-link {% if request.resolver_match.app_name == 'core' %}active{% endif %}" href="{% url 'core:home' %}">
-      <span class="app-sidebar-icon">H</span>
-      <span>Home</span>
+    <a class="app-sidebar-link {% if request.resolver_match.app_name == 'core' %}active{% endif %}" href="{% url 'core:home' %}" aria-label="Home" title="Home">
+      <span class="app-sidebar-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="m3 11 9-8 9 8v9a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"></path></svg>
+      </span>
+      <span class="app-sidebar-label">Home</span>
     </a>
-    <a class="app-sidebar-link {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard:home' %}">
-      <span class="app-sidebar-icon">D</span>
-      <span>Dashboard</span>
+    <a class="app-sidebar-link {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard:home' %}" aria-label="Dashboard" title="Dashboard">
+      <span class="app-sidebar-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 13h6V4H4zm0 7h6v-4H4zm10 0h6v-9h-6zm0-12h6V4h-6z"></path></svg>
+      </span>
+      <span class="app-sidebar-label">Dashboard Operacional</span>
     </a>
-    <span class="app-sidebar-link disabled" aria-disabled="true">
-      <span class="app-sidebar-icon">I</span>
-      <span>Importações</span>
+    <span class="app-sidebar-link disabled" aria-disabled="true" aria-label="Importações" title="Importações">
+      <span class="app-sidebar-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M5 21h14"></path></svg>
+      </span>
+      <span class="app-sidebar-label">Importações</span>
     </span>
     {% if request.user.is_superuser or perms.accounts.manage_internal_users %}
-      <a class="app-sidebar-link {% if request.resolver_match.app_name == 'accounts' and 'users' in request.path %}active{% endif %}" href="{% url 'accounts:user_list' %}">
-        <span class="app-sidebar-icon">U</span>
-        <span>Usuários</span>
+      <a class="app-sidebar-link {% if request.resolver_match.app_name == 'accounts' and 'users' in request.path %}active{% endif %}" href="{% url 'accounts:user_list' %}" aria-label="Usuários" title="Usuários">
+        <span class="app-sidebar-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8m8-1v6m3-3h-6"></path></svg>
+        </span>
+        <span class="app-sidebar-label">Usuários</span>
       </a>
     {% endif %}
   </nav>
@@ -33,15 +61,19 @@
       <div class="app-sidebar-user">{{ request.user.get_username }}</div>
       <form action="{% url 'accounts:logout' %}" method="post">
         {% csrf_token %}
-        <button class="app-sidebar-button" type="submit">
-          <span class="app-sidebar-icon">S</span>
-          <span>Sair</span>
+        <button class="app-sidebar-button" type="submit" aria-label="Sair" title="Sair">
+          <span class="app-sidebar-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5m5 5H3m10-9h7a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-7"></path></svg>
+          </span>
+          <span class="app-sidebar-label">Sair</span>
         </button>
       </form>
     {% else %}
-      <a class="app-sidebar-link" href="{% url 'accounts:login' %}">
-        <span class="app-sidebar-icon">E</span>
-        <span>Entrar</span>
+      <a class="app-sidebar-link" href="{% url 'accounts:login' %}" aria-label="Entrar" title="Entrar">
+        <span class="app-sidebar-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="m14 7 5 5-5 5m5-5H7m4 9H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h7"></path></svg>
+        </span>
+        <span class="app-sidebar-label">Entrar</span>
       </a>
     {% endif %}
   </div>

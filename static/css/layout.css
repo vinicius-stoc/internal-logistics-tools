@@ -17,24 +17,64 @@
   z-index: 1030;
 }
 
+.app-sidebar-toggle {
+  align-items: center;
+  align-self: flex-start;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  display: inline-flex;
+  height: 2.35rem;
+  justify-content: center;
+  margin-bottom: 0.85rem;
+  padding: 0;
+  width: 2.35rem;
+}
+
+.app-sidebar-toggle:hover,
+.app-sidebar-toggle:focus-visible {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.32);
+  color: #FFFFFF;
+  outline: none;
+}
+
+.app-sidebar-toggle svg {
+  fill: none;
+  height: 1.25rem;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 2;
+  width: 1.25rem;
+}
+
 .app-brand {
+  align-items: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
   margin-bottom: 1rem;
   padding-bottom: 1rem;
 }
 
-.app-brand-mark {
+.app-brand-mark,
+.app-brand-logo-wrap {
   align-items: center;
-  background: var(--color-brand-red);
+  background: #FFFFFF;
   border-radius: 10px;
   display: inline-flex;
-  font-size: 0.8rem;
-  font-weight: 800;
   height: 2.35rem;
   justify-content: center;
-  letter-spacing: 0;
   margin-right: 0.65rem;
+  padding: 0.25rem;
   width: 2.35rem;
+}
+
+.app-brand-logo {
+  display: block;
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
 }
 
 .app-brand-title {
@@ -103,6 +143,21 @@
   height: 1.55rem;
   justify-content: center;
   min-width: 1.55rem;
+}
+
+.app-sidebar-icon svg {
+  fill: none;
+  height: 0.95rem;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+  width: 0.95rem;
+}
+
+.app-sidebar-link:nth-child(2) .app-sidebar-icon svg {
+  fill: currentColor;
+  stroke: none;
 }
 
 .app-sidebar-link.active .app-sidebar-icon {
@@ -177,27 +232,186 @@
   padding: 1.5rem 1.75rem 2.5rem;
 }
 
-.auth-shell {
-  align-items: center;
-  background:
-    linear-gradient(135deg, rgba(215, 25, 32, 0.06), transparent 38%),
-    var(--color-background);
-  display: flex;
-  min-height: 100vh;
-  padding: 1.5rem;
+@media (min-width: 992px) {
+  .app-sidebar,
+  .app-main {
+    transition: margin-left 180ms ease, width 180ms ease;
+  }
+
+  .app-shell.sidebar-collapsed .app-sidebar {
+    padding-left: 0.8rem;
+    padding-right: 0.8rem;
+    width: 4.75rem;
+  }
+
+  .app-shell.sidebar-collapsed .app-main {
+    margin-left: 4.75rem;
+  }
+
+  .app-shell.sidebar-collapsed .app-sidebar-toggle {
+    align-self: center;
+  }
+
+  .app-shell.sidebar-collapsed .app-brand {
+    justify-content: center;
+  }
+
+  .app-shell.sidebar-collapsed .app-brand-logo-wrap {
+    margin-right: 0;
+  }
+
+  .app-shell.sidebar-collapsed .app-brand-title,
+  .app-shell.sidebar-collapsed .app-sidebar-label,
+  .app-shell.sidebar-collapsed .app-sidebar-user {
+    display: none;
+  }
+
+  .app-shell.sidebar-collapsed .app-sidebar-link,
+  .app-shell.sidebar-collapsed .app-sidebar-button {
+    gap: 0;
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .app-shell.sidebar-collapsed .app-sidebar-footer form {
+    margin: 0;
+  }
 }
 
-.auth-card {
-  margin: 0 auto;
-  max-width: 430px;
+@media (prefers-reduced-motion: reduce) {
+  .app-sidebar,
+  .app-main {
+    transition: none;
+  }
+}
+
+.auth-split-shell {
+  background: var(--color-background);
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(390px, 0.9fr);
+  min-height: 100vh;
+}
+
+.auth-hero {
+  background-image:
+    linear-gradient(90deg, rgba(18, 18, 18, 0.76), rgba(18, 18, 18, 0.2)),
+    url("../img/brand/login-hero.jpg");
+  background-position: center;
+  background-size: cover;
+  min-height: 100vh;
+  position: relative;
+}
+
+.auth-hero::after {
+  background:
+    linear-gradient(135deg, rgba(215, 25, 32, 0.48), transparent 44%),
+    linear-gradient(0deg, rgba(18, 18, 18, 0.48), transparent 58%);
+  content: "";
+  inset: 0;
+  position: absolute;
+}
+
+.auth-hero-content {
+  bottom: 3rem;
+  color: #FFFFFF;
+  left: 3rem;
+  max-width: 34rem;
+  position: absolute;
+  right: 3rem;
+  z-index: 1;
+}
+
+.auth-hero-logo {
+  background: #FFFFFF;
+  border-radius: 14px;
+  height: 3.25rem;
+  object-fit: contain;
+  padding: 0.45rem;
+  width: 3.25rem;
+}
+
+.auth-hero-kicker {
+  color: rgba(255, 255, 255, 0.86);
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin-top: 1rem;
+  text-transform: uppercase;
+}
+
+.auth-hero-content h1 {
+  color: #FFFFFF;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.02;
+  margin: 0.65rem 0;
+}
+
+.auth-hero-content p {
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.auth-panel {
+  align-items: center;
+  background: var(--color-surface);
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.auth-panel-card {
+  max-width: 420px;
   width: 100%;
 }
 
-.auth-card.app-card {
-  padding: 1.5rem;
+.auth-panel-brand {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.auth-panel-logo {
+  height: 2.5rem;
+  object-fit: contain;
+  width: 2.5rem;
+}
+
+.auth-panel-brand strong {
+  color: var(--color-text-primary);
+  display: block;
+  font-weight: 800;
+}
+
+.auth-panel-brand span,
+.auth-panel-copy {
+  color: var(--color-text-secondary);
+}
+
+.auth-panel-card h2 {
+  color: var(--color-text-primary);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin-bottom: 0.35rem;
+}
+
+.auth-panel-copy {
+  margin-bottom: 1.5rem;
 }
 
 @media (max-width: 991.98px) {
+  .app-sidebar-toggle {
+    display: none;
+  }
+
   .app-sidebar {
     bottom: auto;
     min-height: auto;
@@ -227,6 +441,30 @@
   .app-content {
     padding: 1rem;
   }
+
+  .auth-split-shell {
+    display: block;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  .auth-hero {
+    inset: 0;
+    min-height: 100vh;
+    opacity: 0.2;
+    position: fixed;
+  }
+
+  .auth-hero-content {
+    display: none;
+  }
+
+  .auth-panel {
+    background: rgba(255, 255, 255, 0.94);
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+  }
 }
 
 @media (max-width: 575.98px) {
@@ -236,5 +474,9 @@
 
   .app-topbar-title {
     font-size: 1.35rem;
+  }
+
+  .auth-panel {
+    padding: 1.25rem;
   }
 }
